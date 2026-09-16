@@ -21,7 +21,7 @@ export const Route = createFileRoute("/movimientos")({
       },
     ],
   }),
-  component: Movimientos;
+  component: Movimientos,
 });
 
 function Movimientos() {
