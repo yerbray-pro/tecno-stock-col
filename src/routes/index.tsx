@@ -110,12 +110,10 @@ function Dashboard() {
             {eventosComerciales.slice(0, 3).map((e) => (
               <li key={e.id} className="flex items-start gap-3">
                 <div
-                  className={`grid size-11 shrink-0 place-items-center rounded-[10px] text-center leading-none bg-${e.tono}/10`}
+                  className={`grid size-11 shrink-0 place-items-center rounded-[10px] text-center leading-none ${FONDO_EVENTO[e.tono]}`}
                 >
-                  <span className={`font-display text-base font-semibold text-${e.tono}`}>
-                    {e.dia}
-                  </span>
-                  <span className={`text-[9px] uppercase text-${e.tono}`}>{e.mes}</span>
+                  <span className="font-display text-base font-semibold">{e.dia}</span>
+                  <span className="text-[9px] uppercase opacity-70">{e.mes}</span>
                 </div>
                 <div className="min-w-0">
                   <p className="text-sm font-medium">{e.nombre}</p>
