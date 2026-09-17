@@ -26,6 +26,13 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
+const FONDO_EVENTO: Record<string, string> = {
+  brand: "bg-brand/10 text-brand",
+  amber: "bg-amber/10 text-amber",
+  rose: "bg-rose/10 text-rose",
+  teal: "bg-teal/10 text-teal",
+};
+
 function Dashboard() {
   const { productos, movimientos } = useTienda();
   const meses = clavesDeMeses(6);
