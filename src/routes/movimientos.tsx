@@ -33,7 +33,7 @@ function Movimientos() {
     tipo: "salida" as "entrada" | "salida",
     cantidad: "1",
     fecha: FECHA_HOY,
-    usuario: USUARIOS[0],
+    usuario: USUARIOS[0] as string,
   });
 
   const lista = movimientos.filter((m) => filtro === "Todos" || m.tipo === filtro.toLowerCase());

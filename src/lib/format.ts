@@ -7,7 +7,7 @@ export function numero(valor: number): string {
 }
 
 export function fechaCorta(iso: string): string {
-  const [a, m, d] = iso.split("-").map(Number);
+  const [a = 0, m = 1, d = 1] = iso.split("-").map(Number);
   const meses = [
     "ene",
     "feb",
@@ -41,6 +41,6 @@ export const MESES_CORTOS = [
 ];
 
 export function etiquetaMes(clave: string): string {
-  const [a, m] = clave.split("-").map(Number);
+  const [a = 0, m = 1] = clave.split("-").map(Number);
   return `${MESES_CORTOS[m - 1]} ${String(a).slice(2)}`;
 }

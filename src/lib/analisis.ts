@@ -4,7 +4,7 @@ import { estadoDeProducto } from "./data";
 export type SerieMes = { clave: string; entradas: number; salidas: number };
 
 export function clavesDeMeses(cantidad: number, hasta = "2026-09"): string[] {
-  const [a0, m0] = hasta.split("-").map(Number);
+  const [a0 = 0, m0 = 1] = hasta.split("-").map(Number);
   const claves: string[] = [];
   for (let i = cantidad - 1; i >= 0; i--) {
     const total = a0 * 12 + (m0 - 1) - i;
@@ -75,8 +75,8 @@ export function pronosticar(
   const ultimos3 = salidasPorMes.slice(-3);
   // Promedio ponderado: el mes más reciente pesa más.
   const promedioPonderado =
-    (ultimos3[0] * 1 + ultimos3[1] * 2 + ultimos3[2] * 3) / 6;
-  const ultimo = salidasPorMes[salidasPorMes.length - 1];
+    ((ultimos3[0] ?? 0) * 1 + (ultimos3[1] ?? 0) * 2 + (ultimos3[2] ?? 0) * 3) / 6;
+  const ultimo = salidasPorMes[salidasPorMes.length - 1] ?? 0;
   const anterior = salidasPorMes[salidasPorMes.length - 2] || 1;
   const variacion = ((ultimo - anterior) / anterior) * 100;
   const tendencia =
