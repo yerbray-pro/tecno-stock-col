@@ -45,7 +45,9 @@ function Dashboard() {
     .map((p) => ({
       producto: p,
       salidas: movimientos
-        .filter((m) => m.productoId === p.id && m.tipo === "salida" && m.fecha.startsWith(meses[5]))
+      .filter(
+        (m) => m.productoId === p.id && m.tipo === "salida" && m.fecha.startsWith(meses[5] ?? ""),
+      )
         .reduce((s, m) => s + m.cantidad, 0),
     }))
     .sort((a, b) => b.salidas - a.salidas);

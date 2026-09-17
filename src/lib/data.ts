@@ -143,8 +143,8 @@ function construirMovimientos(): Movimiento[] {
   let n = 0;
   mesesHistorial.forEach(({ anio, mes }, i) => {
     Object.entries(historial).forEach(([productoId, datos]) => {
-      const entrada = datos.entradas[i];
-      const salida = datos.salidas[i];
+      const entrada = datos.entradas[i] ?? 0;
+      const salida = datos.salidas[i] ?? 0;
       const mm = String(mes).padStart(2, "0");
       if (entrada > 0) {
         lista.push({
@@ -153,7 +153,7 @@ function construirMovimientos(): Movimiento[] {
           tipo: "entrada",
           cantidad: entrada,
           fecha: `${anio}-${mm}-05`,
-          usuario: USUARIOS[n % USUARIOS.length],
+          usuario: USUARIOS[n % USUARIOS.length] as string,
           nota: "Reposición de proveedor",
         });
       }
@@ -166,7 +166,7 @@ function construirMovimientos(): Movimiento[] {
           tipo: "salida",
           cantidad: primera,
           fecha: `${anio}-${mm}-12`,
-          usuario: USUARIOS[n % USUARIOS.length],
+          usuario: USUARIOS[n % USUARIOS.length] as string,
           nota: "Ventas del mostrador",
         });
         if (salida - primera > 0) {
@@ -176,7 +176,7 @@ function construirMovimientos(): Movimiento[] {
             tipo: "salida",
             cantidad: salida - primera,
             fecha: `${anio}-${mm}-24`,
-            usuario: USUARIOS[n % USUARIOS.length],
+            usuario: USUARIOS[n % USUARIOS.length] as string,
             nota: "Ventas del mostrador",
           });
         }

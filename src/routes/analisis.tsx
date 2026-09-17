@@ -39,7 +39,7 @@ function Analisis() {
   return (
     <AppShell
       titulo="Análisis y recomendaciones"
-      subtitulo={`Historial de ${etiquetaMes(meses[0])} a ${etiquetaMes(meses[5])}`}
+      subtitulo={`Historial de ${etiquetaMes(meses[0] ?? "")} a ${etiquetaMes(meses[5] ?? "")}`}
     >
       <Panel className="p-5">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
@@ -86,12 +86,12 @@ function Analisis() {
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Resumen
             titulo="Salidas del último mes"
-            valor={numero(serie[5].salidas)}
-            pie={`vs. ${numero(serie[4].salidas)} el mes anterior`}
+            valor={numero(serie[5]?.salidas ?? 0)}
+            pie={`vs. ${numero(serie[4]?.salidas ?? 0)} el mes anterior`}
           />
           <Resumen
             titulo="Entradas del último mes"
-            valor={numero(serie[5].entradas)}
+            valor={numero(serie[5]?.entradas ?? 0)}
             pie="Reposiciones registradas"
           />
           <Resumen
