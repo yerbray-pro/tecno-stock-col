@@ -26,6 +26,13 @@ export const Route = createFileRoute("/")({
   component: Dashboard,
 });
 
+const FONDO_EVENTO: Record<string, string> = {
+  brand: "bg-brand/10 text-brand",
+  amber: "bg-amber/10 text-amber",
+  rose: "bg-rose/10 text-rose",
+  teal: "bg-teal/10 text-teal",
+};
+
 function Dashboard() {
   const { productos, movimientos } = useTienda();
   const meses = clavesDeMeses(6);
@@ -38,7 +45,9 @@ function Dashboard() {
     .map((p) => ({
       producto: p,
       salidas: movimientos
-        .filter((m) => m.productoId === p.id && m.tipo === "salida" && m.fecha.startsWith(meses[5]))
+      .filter(
+        (m) => m.productoId === p.id && m.tipo === "salida" && m.fecha.startsWith(meses[5] ?? ""),
+      )
         .reduce((s, m) => s + m.cantidad, 0),
     }))
     .sort((a, b) => b.salidas - a.salidas);
@@ -69,7 +78,7 @@ function Dashboard() {
         <Kpi
           titulo="Unidades disponibles"
           valor={numero(unidades)}
-          pie={`${numero(serie[5].salidas)} salidas este mes`}
+          pie={`${numero(serie[5]?.salidas ?? 0)} salidas este mes`}
           icono="▣"
         />
         <Kpi

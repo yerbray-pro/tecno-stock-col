@@ -153,7 +153,7 @@ export function Etiqueta({
 }) {
   return (
     <span
-      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${TONOS[tono] ?? TONOS.gris}`}
+      className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-1 text-[11px] font-medium ${TONOS[tono] ?? TONOS["gris"]}`}
     >
       {punto && <span className="size-1.5 rounded-full bg-current" />}
       {children}
