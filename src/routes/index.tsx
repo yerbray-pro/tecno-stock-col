@@ -78,7 +78,7 @@ function Dashboard() {
         <Kpi
           titulo="Unidades disponibles"
           valor={numero(unidades)}
-          pie={`${numero(serie[5].salidas)} salidas este mes`}
+          pie={`${numero(serie[5]?.salidas ?? 0)} salidas este mes`}
           icono="▣"
         />
         <Kpi
