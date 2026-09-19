@@ -65,7 +65,7 @@ function Inventario() {
       acciones={
         <BotonPrimario onClick={() => setFormAbierto((v) => !v)}>
           <span className="grid size-4 place-items-center">＋</span>
-          <span className="hidden sm:inline">Agregar producto</span>
+          <span className="hidden sm:inline">Nuevo producto</span>
           <span className="sm:hidden">Agregar</span>
         </BotonPrimario>
       }
@@ -85,7 +85,7 @@ function Inventario() {
           <input
             value={busqueda}
             onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar por nombre, marca o categoría…"
+            placeholder="Buscar productos, marcas o categorías…"
             className="w-full rounded-[10px] border border-line bg-canvas px-3 py-2 text-sm outline-none placeholder:text-ink-faint focus:ring-2 focus:ring-brand/30"
           />
           <select
@@ -319,9 +319,12 @@ function FormularioProducto({
         </Campo>
         <div className="flex items-end gap-2 sm:col-span-3">
           <BotonPrimario type="submit">Guardar producto</BotonPrimario>
-          <BotonSuave type="button" onClick={onCancelar}>
-            Cancelar
-          </BotonSuave>
+           <BotonSuave
+            type="button"
+            onClick={onCancelar}
+            className="border-rose/30 text-rose hover:bg-rose/10">
+  Cancelar
+</BotonSuave>
         </div>
       </form>
     </Panel>
