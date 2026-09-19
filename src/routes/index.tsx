@@ -56,7 +56,7 @@ function Dashboard() {
 
   return (
     <AppShell
-      titulo="Dashboard"
+      titulo="TecnoStock — Gestión inteligente de inventario"
       subtitulo="Resumen del inventario · actualizado hoy, 08:42"
       acciones={
         <Link to="/movimientos">
