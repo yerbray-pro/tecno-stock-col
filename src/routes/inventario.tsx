@@ -319,10 +319,7 @@ function FormularioProducto({
         </Campo>
         <div className="flex items-end gap-2 sm:col-span-3">
           <BotonPrimario type="submit">Guardar producto</BotonPrimario>
-           <BotonSuave
-            type="button"
-            onClick={onCancelar}
-            className="border-rose/30 text-rose hover:bg-rose/10">
+         <BotonSuave type="button" onClick={onCancelar}>
   Cancelar
 </BotonSuave>
         </div>
