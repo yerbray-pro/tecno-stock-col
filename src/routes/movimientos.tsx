@@ -40,7 +40,7 @@ function Movimientos() {
   const nombre = (id: string) => productos.find((p) => p.id === id)?.nombre ?? "—";
 
   return (
-    <AppShell titulo="Movimientos" subtitulo="Entradas y salidas de inventario">
+    <AppShell titulo="Movimientos" subtitulo="Control de entradas y salidas de productos">
       <div className="grid gap-4 xl:grid-cols-3">
         <Panel className="p-5">
           <h2 className="font-display text-base font-semibold tracking-tight">
