@@ -11,7 +11,7 @@ import {
 import { estadoDeProducto, type Producto } from "@/lib/data";
 import { fechaCorta, pesos } from "@/lib/format";
 import { useTienda } from "@/lib/store";
-import { useProductosSupabase } from "@/lib/productos-supabase";
+import { useProductosSupabase, validarProducto } from "@/lib/productos-supabase";
 
 export const Route = createFileRoute("/inventario")({
   head: () => ({
@@ -33,8 +33,9 @@ export const Route = createFileRoute("/inventario")({
 });
 
 function Inventario() {
-  const { movimientos, agregarProducto } = useTienda();
-  const { estado: carga, recargar } = useProductosSupabase();
+  const { movimientos } = useTienda();
+  const { estado: carga, recargar, crear } = useProductosSupabase();
+  const [aviso, setAviso] = useState<string | null>(null);
   const productos = carga.tipo === "listo" ? carga.productos : [];
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("Todas");
@@ -81,12 +82,23 @@ function Inventario() {
     >
       {formAbierto && (
         <FormularioProducto
-          onGuardar={(p) => {
-            agregarProducto(p);
-            setFormAbierto(false);
+          onGuardar={async (p) => {
+            const r = await crear(p);
+            if (r.ok) {
+              setFormAbierto(false);
+              setAviso(`«${p.nombre}» se guardó correctamente en el inventario.`);
+            }
+            return r;
           }}
           onCancelar={() => setFormAbierto(false)}
         />
+      )}
+
+      {aviso && (
+        <Panel className="flex items-center justify-between gap-3 border-teal/40 bg-teal/5 p-4">
+          <p role="status" className="text-sm font-medium text-teal">{aviso}</p>
+          <BotonSuave onClick={() => setAviso(null)}>Cerrar</BotonSuave>
+        </Panel>
       )}
 
       <Panel className="p-4">
@@ -261,7 +273,9 @@ function FormularioProducto({
   onGuardar,
   onCancelar,
 }: {
-  onGuardar: (p: Omit<Producto, "id" | "registrado">) => void;
+  onGuardar: (
+    p: Omit<Producto, "id" | "registrado">,
+  ) => Promise<{ ok: true } | { ok: false; error: string }>;
   onCancelar: () => void;
 }) {
   const [form, setForm] = useState({
@@ -272,23 +286,40 @@ function FormularioProducto({
     stockMinimo: "5",
     precioCompra: "0",
   });
+  const [guardando, setGuardando] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   return (
     <Panel className="p-5">
       <h2 className="font-display text-base font-semibold tracking-tight">Agregar producto</h2>
       <form
         className="mt-4 grid gap-3 sm:grid-cols-3"
-        onSubmit={(e) => {
+        onSubmit={async (e) => {
           e.preventDefault();
-          if (!form.nombre.trim()) return;
-          onGuardar({
+          if (guardando) return;
+          const campos = [form.stock, form.stockMinimo, form.precioCompra];
+          if (campos.some((v) => v.trim() === "" || !Number.isFinite(Number(v)))) {
+            setError("Stock actual, stock mínimo y precio de compra deben ser números válidos.");
+            return;
+          }
+          const nuevo = {
             nombre: form.nombre.trim(),
             categoria: form.categoria,
             marca: form.marca.trim() || "Genérica",
-            stock: Number(form.stock) || 0,
-            stockMinimo: Number(form.stockMinimo) || 0,
-            precioCompra: Number(form.precioCompra) || 0,
-          });
+            stock: Number(form.stock),
+            stockMinimo: Number(form.stockMinimo),
+            precioCompra: Number(form.precioCompra),
+          };
+          const invalido = validarProducto(nuevo);
+          if (invalido) {
+            setError(invalido);
+            return;
+          }
+          setError(null);
+          setGuardando(true);
+          const r = await onGuardar(nuevo);
+          setGuardando(false);
+          if (!r.ok) setError(r.error);
         }}
       >
         <Campo label="Nombre del producto">
@@ -347,8 +378,15 @@ function FormularioProducto({
             className="campo"
           />
         </Campo>
+        {error && (
+          <p role="alert" className="text-sm font-medium text-rose sm:col-span-3">
+            {error}
+          </p>
+        )}
         <div className="flex items-end gap-2 sm:col-span-3">
-          <BotonPrimario type="submit">Guardar producto</BotonPrimario>
+          <BotonPrimario type="submit" disabled={guardando}>
+            {guardando ? "Guardando…" : "Guardar producto"}
+          </BotonPrimario>
          <BotonSuave type="button" onClick={onCancelar}>
   Cancelar
 </BotonSuave>
