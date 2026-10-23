@@ -11,6 +11,7 @@ import {
 import { estadoDeProducto, type Producto } from "@/lib/data";
 import { fechaCorta, pesos } from "@/lib/format";
 import { useTienda } from "@/lib/store";
+import { useProductosSupabase } from "@/lib/productos-supabase";
 
 export const Route = createFileRoute("/inventario")({
   head: () => ({
@@ -32,7 +33,9 @@ export const Route = createFileRoute("/inventario")({
 });
 
 function Inventario() {
-  const { productos, movimientos, agregarProducto } = useTienda();
+  const { movimientos, agregarProducto } = useTienda();
+  const { estado: carga, recargar } = useProductosSupabase();
+  const productos = carga.tipo === "listo" ? carga.productos : [];
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("Todas");
   const [estadoFiltro, setEstadoFiltro] = useState("Todos");
