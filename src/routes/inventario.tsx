@@ -11,6 +11,7 @@ import {
 import { estadoDeProducto, type Producto } from "@/lib/data";
 import { fechaCorta, pesos } from "@/lib/format";
 import { useTienda } from "@/lib/store";
+import { useProductosSupabase } from "@/lib/productos-supabase";
 
 export const Route = createFileRoute("/inventario")({
   head: () => ({
@@ -32,7 +33,9 @@ export const Route = createFileRoute("/inventario")({
 });
 
 function Inventario() {
-  const { productos, movimientos, agregarProducto } = useTienda();
+  const { movimientos, agregarProducto } = useTienda();
+  const { estado: carga, recargar } = useProductosSupabase();
+  const productos = carga.tipo === "listo" ? carga.productos : [];
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("Todas");
   const [estadoFiltro, setEstadoFiltro] = useState("Todos");
@@ -61,7 +64,13 @@ function Inventario() {
   return (
     <AppShell
       titulo="Inventario"
-      subtitulo={`${productos.length} productos registrados`}
+      subtitulo={
+        carga.tipo === "cargando"
+          ? "Cargando productos…"
+          : carga.tipo === "error"
+            ? "No se pudieron cargar los productos"
+            : `${productos.length} productos registrados`
+      }
       acciones={
         <BotonPrimario onClick={() => setFormAbierto((v) => !v)}>
           <span className="grid size-4 place-items-center">＋</span>
@@ -151,10 +160,31 @@ function Inventario() {
                     </tr>
                   );
                 })}
-                {lista.length === 0 && (
+                {carga.tipo === "cargando" &&
+                  [0, 1, 2, 3].map((i) => (
+                    <tr key={`c${i}`}>
+                      <td colSpan={7} className="px-5 py-3">
+                        <div className="h-4 w-full animate-pulse rounded bg-canvas" />
+                      </td>
+                    </tr>
+                  ))}
+                {carga.tipo === "error" && (
+                  <tr>
+                    <td colSpan={7} className="px-5 py-8 text-center text-sm">
+                      <p className="font-medium text-rose">No se pudieron cargar los productos.</p>
+                      <p className="mt-1 text-xs text-ink-faint">{carga.mensaje}</p>
+                      <div className="mt-3 flex justify-center">
+                        <BotonSuave onClick={() => void recargar()}>Reintentar</BotonSuave>
+                      </div>
+                    </td>
+                  </tr>
+                )}
+                {carga.tipo === "listo" && lista.length === 0 && (
                   <tr>
                     <td colSpan={7} className="px-5 py-8 text-center text-sm text-ink-faint">
-                      No se encontraron productos con esos filtros.
+                      {productos.length === 0
+                        ? "Todavía no hay productos registrados en la base de datos."
+                        : "No se encontraron productos con esos filtros."}
                     </td>
                   </tr>
                 )}
