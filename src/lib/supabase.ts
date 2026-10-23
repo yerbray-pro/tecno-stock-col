@@ -19,8 +19,8 @@ import { createClient, type SupabaseClient } from "@supabase/supabase-js";
  * reales del proyecto Supabase y volver a levantar el servidor de desarrollo.
  */
 
-const SUPABASE_URL = import.meta.env.VITE_SUPABASE_URL as string | undefined;
-const SUPABASE_PUBLISHABLE_KEY = import.meta.env.VITE_SUPABASE_PUBLISHABLE_KEY as
+const SUPABASE_URL = import.meta.env["VITE_SUPABASE_URL"] as string | undefined;
+const SUPABASE_PUBLISHABLE_KEY = import.meta.env["VITE_SUPABASE_PUBLISHABLE_KEY"] as
   | string
   | undefined;
 
