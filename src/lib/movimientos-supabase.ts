@@ -65,7 +65,7 @@ export function filaAMovimiento(fila: Record<string, unknown>): Movimiento {
     cantidad: Number(fila["cantidad"]),
     fecha: String(fila["fecha"] ?? "").slice(0, 10),
     usuario: String(fila["usuario_responsable"] ?? "—"),
-    nota: [fila["motivo"], fila["observacion"]].filter(Boolean).join(" · ") || undefined,
+    nota: [fila["motivo"], fila["observacion"]].filter(Boolean).join(" · "),
   };
 }
 
