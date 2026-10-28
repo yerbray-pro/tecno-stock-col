@@ -1,6 +1,7 @@
 # Movimientos reales
 
-- [ ] Obtener y revisar el esquema real, relaciones, políticas RLS y funciones/triggers de productos y movimientos. Bloqueado: la base externa no está conectada aquí y las variables de Vercel no están disponibles.
-- [ ] Conectar consulta y formulario de Movimientos conservando diseño, filtros, navegación y estados de carga/error/reintento/vacío.
-- [ ] Implementar o reutilizar operación atómica autorizada para stock y movimiento, sin recrear tablas ni modificar otras pantallas.
-- [ ] Añadir pruebas de cantidades y salidas, verificar el flujo real y la compilación, y documentar configuración/publicación.
+- [x] Revisar código y esquema confirmado por el usuario; no hay acceso a la base externa desde este entorno.
+- [x] Conectar consulta y formulario de Movimientos conservando diseño, filtros, navegación y estados de carga/error/reintento/vacío.
+- [x] Preparar SQL atómico con acceso restringido y pruebas ROLLBACK, sin recrear tablas ni abrir escrituras anónimas.
+- [x] Ejecutar 20 pruebas locales; verificar estados de conexión, navegación y formulario Inventario; compilación automática correcta. Documentar configuración/publicación.
+- [ ] Ejecutar SQL y verificar persistencia real. Bloqueado: conexión externa no disponible, sin variables de Vercel ni sesión autorizada aquí.

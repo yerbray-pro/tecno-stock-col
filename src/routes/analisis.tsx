@@ -17,6 +17,8 @@ export const Route = createFileRoute("/analisis")({
           "Tendencias de venta, pronóstico sencillo de demanda y recomendaciones de reposición según eventos comerciales.",
       },
       { property: "og:title", content: "Análisis y recomendaciones — TecnoStock" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         property: "og:description",
         content: "Historial de movimientos, productos en aumento o disminución y pronóstico del próximo periodo.",

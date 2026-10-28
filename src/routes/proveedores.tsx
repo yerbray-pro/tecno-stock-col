@@ -15,6 +15,8 @@ export const Route = createFileRoute("/proveedores")({
           "Compara precios de proveedores, crea órdenes de compra y recibe mercancía para actualizar el inventario.",
       },
       { property: "og:title", content: "Proveedores y órdenes — TecnoStock" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         property: "og:description",
         content: "Proveedores con sus productos y precios, y órdenes de compra con estados Pendiente, Enviada y Recibida.",
