@@ -46,8 +46,8 @@ function Movimientos() {
 
   return (
     <AppShell titulo="Movimientos" subtitulo="Control de entradas y salidas de productos">
-      <div className="grid gap-4 xl:grid-cols-3">
-        <Panel className="p-5">
+      <div className="grid min-w-0 gap-4 xl:grid-cols-3">
+        <Panel className="min-w-0 p-5">
           <h2 className="font-display text-base font-semibold tracking-tight">
             Registrar movimiento
           </h2>
@@ -171,7 +171,7 @@ function Movimientos() {
           </form>
         </Panel>
 
-        <Panel className="xl:col-span-2">
+        <Panel className="min-w-0 xl:col-span-2">
           {estado.tipo === "cargando" && <p role="status" className="px-5 py-4 text-sm text-ink-soft">Cargando productos y movimientos…</p>}
           {estado.tipo === "error" && <div className="space-y-2 px-5 py-4"><p role="alert" className="text-sm text-rose">{estado.mensaje}</p><BotonSuave onClick={() => void recargar()}>Reintentar</BotonSuave></div>}
           <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-4">
