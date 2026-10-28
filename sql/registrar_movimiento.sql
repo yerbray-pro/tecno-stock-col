@@ -23,7 +23,9 @@ DECLARE
   v_id bigint;
   -- Denegado por defecto: sustituir por UUID reales de operadores de auth.users.
   -- Ejemplo de sintaxis SIN UUID ficticios: ARRAY['UUID_REAL']::uuid[].
-  v_operadores CONSTANT uuid[] := ARRAY[]::uuid[];
+  v_operadores CONSTANT uuid[] := ARRAY[
+  '27feaf58-ab88-438c-a502-92777afa04e5'
+]::uuid[];
 BEGIN
   -- SECURITY DEFINER usa privilegios del propietario; esta autorización es esencial.
   -- Nunca tomar el UUID ni la autorización de parámetros enviados por el navegador.
