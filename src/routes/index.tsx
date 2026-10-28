@@ -16,6 +16,8 @@ export const Route = createFileRoute("/")({
           "Resumen del inventario de tu tienda de tecnología: unidades disponibles, stock bajo, rotación y recomendaciones de reposición.",
       },
       { property: "og:title", content: "Dashboard — TecnoStock" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         property: "og:description",
         content:

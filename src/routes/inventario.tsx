@@ -23,6 +23,8 @@ export const Route = createFileRoute("/inventario")({
           "Consulta productos, stock actual, stock mínimo y precio de compra con filtros por categoría y estado.",
       },
       { property: "og:title", content: "Inventario — TecnoStock" },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
       {
         property: "og:description",
         content: "Lista de productos con stock actual, stock mínimo, precios y estado del inventario.",
