@@ -1,5 +1,11 @@
 # Movimientos reales
 
+## Autenticación y usuarios
+- [ ] Incorporar acceso privado, correo/contraseña, nombre y cierre de sesión.
+- [ ] Incorporar administración segura de trabajadores y roles en servidor.
+- [ ] Entregar inspección SQL, instalación manual, autorización por roles y pruebas con ROLLBACK.
+- [ ] Probar reglas y acceso público; documentar verificaciones reales bloqueadas por conexión externa y configuración.
+
 - [x] Revisar código y esquema confirmado por el usuario; no hay acceso a la base externa desde este entorno.
 - [x] Conectar consulta y formulario de Movimientos conservando diseño, filtros, navegación y estados de carga/error/reintento/vacío.
 - [x] Preparar SQL atómico con acceso restringido y pruebas ROLLBACK, sin recrear tablas ni abrir escrituras anónimas.
