@@ -1,11 +1,11 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell, BotonPrimario, BotonSuave, Etiqueta, Panel } from "@/components/AppShell";
-import { USUARIOS } from "@/lib/data";
+import { useAuth } from "@/lib/auth";
 import { fechaCorta } from "@/lib/format";
 import { useMovimientosSupabase } from "@/lib/movimientos-supabase";
 
-export const Route = createFileRoute("/movimientos")({
+export const Route = createFileRoute("/_authenticated/movimientos")({
   head: () => ({
     meta: [
       { title: "Movimientos — TecnoStock" },
@@ -27,6 +27,7 @@ export const Route = createFileRoute("/movimientos")({
 });
 
 function Movimientos() {
+  const auth = useAuth();
   const { estado, recargar, registrar, guardando } = useMovimientosSupabase();
   const productos = estado.tipo === "listo" ? estado.productos : [];
   const movimientos = estado.tipo === "listo" ? estado.movimientos : [];
@@ -37,7 +38,6 @@ function Movimientos() {
     tipo: "salida" as "entrada" | "salida",
     cantidad: "1",
     fecha: "",
-    usuario: USUARIOS[0] as string,
   });
 
   const lista = movimientos.filter((m) => filtro === "Todos" || m.tipo === filtro.toLowerCase());
@@ -62,7 +62,7 @@ function Movimientos() {
                 tipo: form.tipo,
                 cantidad,
                 fecha: form.fecha,
-                usuario: form.usuario,
+                usuario: auth.nombre,
               });
               setAviso(
                 r.ok
@@ -144,15 +144,7 @@ function Movimientos() {
               <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-faint">
                 Usuario
               </span>
-              <select
-                value={form.usuario}
-                onChange={(e) => setForm({ ...form, usuario: e.target.value })}
-                className="campo mt-1"
-              >
-                {USUARIOS.map((u) => (
-                  <option key={u}>{u}</option>
-                ))}
-              </select>
+              <input value={auth.nombre} readOnly className="campo mt-1" />
             </label>
 
             <BotonPrimario type="submit" className="w-full justify-center">

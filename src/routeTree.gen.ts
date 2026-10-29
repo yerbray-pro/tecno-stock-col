@@ -9,128 +9,207 @@
 // Additionally, you should also exclude this file from your linter and/or formatter to prevent it from being checked or modified.
 
 import { Route as rootRouteImport } from './routes/__root'
-import { Route as IndexRouteImport } from './routes/index'
-import { Route as AnalisisRouteImport } from './routes/analisis'
-import { Route as InventarioRouteImport } from './routes/inventario'
-import { Route as MovimientosRouteImport } from './routes/movimientos'
-import { Route as ProveedoresRouteImport } from './routes/proveedores'
+import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/route'
+import { Route as AuthRouteImport } from './routes/auth'
+import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
+import { Route as AuthenticatedAnalisisRouteImport } from './routes/_authenticated/analisis'
+import { Route as AuthenticatedInventarioRouteImport } from './routes/_authenticated/inventario'
+import { Route as AuthenticatedMovimientosRouteImport } from './routes/_authenticated/movimientos'
+import { Route as AuthenticatedProveedoresRouteImport } from './routes/_authenticated/proveedores'
+import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 
-const IndexRoute = IndexRouteImport.update({
+const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
+  id: '/_authenticated',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthRoute = AuthRouteImport.update({
+  id: '/auth',
+  path: '/auth',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AuthenticatedIndexRoute = AuthenticatedIndexRouteImport.update({
   id: '/',
   path: '/',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const AnalisisRoute = AnalisisRouteImport.update({
+const AuthenticatedAnalisisRoute = AuthenticatedAnalisisRouteImport.update({
   id: '/analisis',
   path: '/analisis',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const InventarioRoute = InventarioRouteImport.update({
+const AuthenticatedInventarioRoute = AuthenticatedInventarioRouteImport.update({
   id: '/inventario',
   path: '/inventario',
-  getParentRoute: () => rootRouteImport,
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
-const MovimientosRoute = MovimientosRouteImport.update({
-  id: '/movimientos',
-  path: '/movimientos',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const ProveedoresRoute = ProveedoresRouteImport.update({
-  id: '/proveedores',
-  path: '/proveedores',
-  getParentRoute: () => rootRouteImport,
+const AuthenticatedMovimientosRoute =
+  AuthenticatedMovimientosRouteImport.update({
+    id: '/movimientos',
+    path: '/movimientos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedProveedoresRoute =
+  AuthenticatedProveedoresRouteImport.update({
+    id: '/proveedores',
+    path: '/proveedores',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
+  id: '/usuarios',
+  path: '/usuarios',
+  getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
 
 export interface FileRoutesByFullPath {
-  '/': typeof IndexRoute
-  '/analisis': typeof AnalisisRoute
-  '/inventario': typeof InventarioRoute
-  '/movimientos': typeof MovimientosRoute
-  '/proveedores': typeof ProveedoresRoute
+  '/': typeof AuthenticatedIndexRoute
+  '/auth': typeof AuthRoute
+  '/analisis': typeof AuthenticatedAnalisisRoute
+  '/inventario': typeof AuthenticatedInventarioRoute
+  '/movimientos': typeof AuthenticatedMovimientosRoute
+  '/proveedores': typeof AuthenticatedProveedoresRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
 }
 export interface FileRoutesByTo {
-  '/': typeof IndexRoute
-  '/analisis': typeof AnalisisRoute
-  '/inventario': typeof InventarioRoute
-  '/movimientos': typeof MovimientosRoute
-  '/proveedores': typeof ProveedoresRoute
+  '/auth': typeof AuthRoute
+  '/analisis': typeof AuthenticatedAnalisisRoute
+  '/inventario': typeof AuthenticatedInventarioRoute
+  '/movimientos': typeof AuthenticatedMovimientosRoute
+  '/proveedores': typeof AuthenticatedProveedoresRoute
+  '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
-  '/': typeof IndexRoute
-  '/analisis': typeof AnalisisRoute
-  '/inventario': typeof InventarioRoute
-  '/movimientos': typeof MovimientosRoute
-  '/proveedores': typeof ProveedoresRoute
+  '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
+  '/auth': typeof AuthRoute
+  '/_authenticated/analisis': typeof AuthenticatedAnalisisRoute
+  '/_authenticated/inventario': typeof AuthenticatedInventarioRoute
+  '/_authenticated/movimientos': typeof AuthenticatedMovimientosRoute
+  '/_authenticated/proveedores': typeof AuthenticatedProveedoresRoute
+  '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/analisis' | '/inventario' | '/movimientos' | '/proveedores'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/analisis' | '/inventario' | '/movimientos' | '/proveedores'
-  id:
-    | '__root__'
+  fullPaths:
     | '/'
+    | '/auth'
     | '/analisis'
     | '/inventario'
     | '/movimientos'
     | '/proveedores'
+    | '/usuarios'
+  fileRoutesByTo: FileRoutesByTo
+  to:
+    | '/auth'
+    | '/analisis'
+    | '/inventario'
+    | '/movimientos'
+    | '/proveedores'
+    | '/usuarios'
+    | '/'
+  id:
+    | '__root__'
+    | '/_authenticated'
+    | '/auth'
+    | '/_authenticated/analisis'
+    | '/_authenticated/inventario'
+    | '/_authenticated/movimientos'
+    | '/_authenticated/proveedores'
+    | '/_authenticated/usuarios'
+    | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
-  IndexRoute: typeof IndexRoute
-  AnalisisRoute: typeof AnalisisRoute
-  InventarioRoute: typeof InventarioRoute
-  MovimientosRoute: typeof MovimientosRoute
-  ProveedoresRoute: typeof ProveedoresRoute
+  AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
+  AuthRoute: typeof AuthRoute
 }
 
 declare module '@tanstack/react-router' {
   interface FileRoutesByPath {
-    '/': {
-      id: '/'
+    '/_authenticated': {
+      id: '/_authenticated'
+      path: ''
+      fullPath: '/'
+      preLoaderRoute: typeof AuthenticatedRouteRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/auth': {
+      id: '/auth'
+      path: '/auth'
+      fullPath: '/auth'
+      preLoaderRoute: typeof AuthRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/_authenticated/': {
+      id: '/_authenticated/'
       path: '/'
       fullPath: '/'
-      preLoaderRoute: typeof IndexRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedIndexRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/analisis': {
-      id: '/analisis'
+    '/_authenticated/analisis': {
+      id: '/_authenticated/analisis'
       path: '/analisis'
       fullPath: '/analisis'
-      preLoaderRoute: typeof AnalisisRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedAnalisisRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/inventario': {
-      id: '/inventario'
+    '/_authenticated/inventario': {
+      id: '/_authenticated/inventario'
       path: '/inventario'
       fullPath: '/inventario'
-      preLoaderRoute: typeof InventarioRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedInventarioRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/movimientos': {
-      id: '/movimientos'
+    '/_authenticated/movimientos': {
+      id: '/_authenticated/movimientos'
       path: '/movimientos'
       fullPath: '/movimientos'
-      preLoaderRoute: typeof MovimientosRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedMovimientosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
-    '/proveedores': {
-      id: '/proveedores'
+    '/_authenticated/proveedores': {
+      id: '/_authenticated/proveedores'
       path: '/proveedores'
       fullPath: '/proveedores'
-      preLoaderRoute: typeof ProveedoresRouteImport
-      parentRoute: typeof rootRouteImport
+      preLoaderRoute: typeof AuthenticatedProveedoresRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/usuarios': {
+      id: '/_authenticated/usuarios'
+      path: '/usuarios'
+      fullPath: '/usuarios'
+      preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
     }
   }
 }
 
+interface AuthenticatedRouteRouteChildren {
+  AuthenticatedAnalisisRoute: typeof AuthenticatedAnalisisRoute
+  AuthenticatedInventarioRoute: typeof AuthenticatedInventarioRoute
+  AuthenticatedMovimientosRoute: typeof AuthenticatedMovimientosRoute
+  AuthenticatedProveedoresRoute: typeof AuthenticatedProveedoresRoute
+  AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
+  AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
+}
+
+const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
+  AuthenticatedAnalisisRoute: AuthenticatedAnalisisRoute,
+  AuthenticatedInventarioRoute: AuthenticatedInventarioRoute,
+  AuthenticatedMovimientosRoute: AuthenticatedMovimientosRoute,
+  AuthenticatedProveedoresRoute: AuthenticatedProveedoresRoute,
+  AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
+  AuthenticatedIndexRoute: AuthenticatedIndexRoute,
+}
+
+const AuthenticatedRouteRouteWithChildren =
+  AuthenticatedRouteRoute._addFileChildren(AuthenticatedRouteRouteChildren)
+
 const rootRouteChildren: RootRouteChildren = {
-  IndexRoute: IndexRoute,
-  AnalisisRoute: AnalisisRoute,
-  InventarioRoute: InventarioRoute,
-  MovimientosRoute: MovimientosRoute,
-  ProveedoresRoute: ProveedoresRoute,
+  AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
+  AuthRoute: AuthRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
