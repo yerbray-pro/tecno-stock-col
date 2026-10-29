@@ -5,7 +5,7 @@ import type { EstadoOrden } from "@/lib/data";
 import { fechaCorta, pesos } from "@/lib/format";
 import { useTienda } from "@/lib/store";
 
-export const Route = createFileRoute("/proveedores")({
+export const Route = createFileRoute("/_authenticated/proveedores")({
   head: () => ({
     meta: [
       { title: "Proveedores y órdenes — TecnoStock" },

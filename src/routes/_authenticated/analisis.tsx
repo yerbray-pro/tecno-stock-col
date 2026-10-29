@@ -7,7 +7,7 @@ import { eventosComerciales } from "@/lib/data";
 import { etiquetaMes, numero } from "@/lib/format";
 import { useTienda } from "@/lib/store";
 
-export const Route = createFileRoute("/analisis")({
+export const Route = createFileRoute("/_authenticated/analisis")({
   head: () => ({
     meta: [
       { title: "Análisis y recomendaciones — TecnoStock" },

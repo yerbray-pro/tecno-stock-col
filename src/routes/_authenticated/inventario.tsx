@@ -13,7 +13,7 @@ import { fechaCorta, pesos } from "@/lib/format";
 import { useTienda } from "@/lib/store";
 import { useProductosSupabase, validarProducto } from "@/lib/productos-supabase";
 
-export const Route = createFileRoute("/inventario")({
+export const Route = createFileRoute("/_authenticated/inventario")({
   head: () => ({
     meta: [
       { title: "Inventario — TecnoStock" },

@@ -5,7 +5,7 @@ import { USUARIOS } from "@/lib/data";
 import { fechaCorta } from "@/lib/format";
 import { useMovimientosSupabase } from "@/lib/movimientos-supabase";
 
-export const Route = createFileRoute("/movimientos")({
+export const Route = createFileRoute("/_authenticated/movimientos")({
   head: () => ({
     meta: [
       { title: "Movimientos — TecnoStock" },
