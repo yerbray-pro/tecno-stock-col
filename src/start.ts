@@ -1,6 +1,12 @@
 import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/react-start";
 
 import { renderErrorPage } from "./lib/error-page";
+import { supabase } from "./lib/supabase";
+
+const attachExistingAuth = createMiddleware().client(async ({ next }) => {
+  const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
+  return next({ headers: data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {} });
+});
 
 const errorMiddleware = createMiddleware().server(async ({ next }) => {
   try {
@@ -25,5 +31,6 @@ const csrfMiddleware = createCsrfMiddleware({
 });
 
 export const startInstance = createStart(() => ({
+  functionMiddleware: [attachExistingAuth],
   requestMiddleware: [errorMiddleware, csrfMiddleware],
 }));

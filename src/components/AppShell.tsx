@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
+import { useAuth } from "@/lib/auth";
 
 const NAV = [
   { to: "/", icono: "▦", texto: "Dashboard" },
@@ -20,6 +21,10 @@ export function AppShell({
   acciones?: ReactNode;
   children: ReactNode;
 }) {
+  const auth = useAuth();
+  const [sessionError, setSessionError] = useState("");
+  const [leaving, setLeaving] = useState(false);
+  const accountNav = auth.rol === "administrador" ? <Link to="/usuarios" className="block px-3 py-2 text-sm text-ink-soft" activeProps={{ className: "font-medium text-brand" }}>Usuarios</Link> : null;
   return (
     <div className="min-h-screen bg-canvas font-sans text-ink">
       <div className="flex">
@@ -49,6 +54,7 @@ export function AppShell({
                 {item.texto}
               </Link>
             ))}
+            {accountNav}
           </nav>
           <div className="m-3 rounded-[12px] bg-canvas p-3">
             <p className="text-[11px] font-medium text-ink">Tienda Central</p>
@@ -67,9 +73,11 @@ export function AppShell({
               </div>
               <div className="flex shrink-0 items-center gap-2.5">
                 {acciones}
-                <div className="grid size-8 shrink-0 place-items-center rounded-full bg-ink text-xs font-semibold text-panel">
-                  LR
-                </div>
+                <span title={auth.nombre} className="hidden max-w-32 truncate text-xs text-ink-soft lg:block">{auth.nombre}</span>
+                <BotonSuave disabled={leaving} onClick={async () => {
+                  setLeaving(true); setSessionError("");
+                  try { await auth.salir(); } catch (e) { setSessionError(e instanceof Error ? e.message : "No se pudo cerrar la sesión."); } finally { setLeaving(false); }
+                }}>{leaving ? "Saliendo…" : "Cerrar sesión"}</BotonSuave>
               </div>
             </div>
             <nav className="flex gap-1 overflow-x-auto border-t border-line px-3 py-2 md:hidden">
@@ -84,10 +92,11 @@ export function AppShell({
                   {item.texto}
                 </Link>
               ))}
+              {accountNav}
             </nav>
           </header>
 
-          <main className="space-y-4 px-4 py-5 sm:px-6">{children}</main>
+          <main className="space-y-4 px-4 py-5 sm:px-6">{sessionError && <p role="alert" className="text-sm text-rose">{sessionError}</p>}{children}</main>
         </div>
       </div>
     </div>
