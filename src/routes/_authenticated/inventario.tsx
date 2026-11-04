@@ -12,6 +12,7 @@ import { estadoDeProducto, type Producto } from "@/lib/data";
 import { fechaCorta, pesos } from "@/lib/format";
 import { useTienda } from "@/lib/store";
 import { useProductosSupabase, validarProducto } from "@/lib/productos-supabase";
+import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/inventario")({
   head: () => ({
@@ -35,6 +36,7 @@ export const Route = createFileRoute("/_authenticated/inventario")({
 });
 
 function Inventario() {
+  const auth = useAuth();
   const { movimientos } = useTienda();
   const { estado: carga, recargar, crear } = useProductosSupabase();
   const [aviso, setAviso] = useState<string | null>(null);
@@ -75,14 +77,14 @@ function Inventario() {
             : `${productos.length} productos registrados`
       }
       acciones={
-        <BotonPrimario onClick={() => setFormAbierto((v) => !v)}>
+        auth.rol === "administrador" && <BotonPrimario onClick={() => setFormAbierto((v) => !v)}>
           <span className="grid size-4 place-items-center">＋</span>
           <span className="hidden sm:inline">Nuevo producto</span>
           <span className="sm:hidden">Agregar</span>
         </BotonPrimario>
       }
     >
-      {formAbierto && (
+      {formAbierto && auth.rol === "administrador" && (
         <FormularioProducto
           onGuardar={async (p) => {
             const r = await crear(p);

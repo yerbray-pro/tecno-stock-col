@@ -1,5 +1,7 @@
 # Activar Movimientos en la base existente
 
+**Actualización de autenticación:** consultar [AUTENTICACION.md](AUTENTICACION.md) antes de instalar scripts. La propuesta nueva usa `registrar_movimiento_roles.sql`; no reinstalar la versión anterior basada en UUID después de activar roles. Los pasos antiguos siguientes describen la etapa previa, sin inicio de sesión.
+
 ## Estado y seguridad
 
 El código usa el cliente existente y `supabase.rpc("registrar_movimiento", ...)`. No se ejecutó SQL remoto: no hay conexión a la base externa ni variables de Vercel en este entorno. La pantalla no usa movimientos de demostración.
