@@ -3,7 +3,7 @@ import { createStart, createCsrfMiddleware, createMiddleware } from "@tanstack/r
 import { renderErrorPage } from "./lib/error-page";
 import { supabase } from "./lib/supabase";
 
-const attachExistingAuth = createMiddleware().client(async ({ next }) => {
+const attachExistingAuth = createMiddleware({ type: "function" }).client(async ({ next }) => {
   const { data } = supabase ? await supabase.auth.getSession() : { data: { session: null } };
   return next({ headers: data.session?.access_token ? { Authorization: `Bearer ${data.session.access_token}` } : {} });
 });
