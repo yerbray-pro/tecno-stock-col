@@ -1,10 +1,12 @@
 # Movimientos reales
 
 ## Autenticación y usuarios
-- [ ] Incorporar acceso privado, correo/contraseña, nombre y cierre de sesión.
-- [ ] Incorporar administración segura de trabajadores y roles en servidor.
-- [ ] Entregar inspección SQL, instalación manual, autorización por roles y pruebas con ROLLBACK.
-- [ ] Probar reglas y acceso público; documentar verificaciones reales bloqueadas por conexión externa y configuración.
+- [x] Incorporar acceso privado, correo/contraseña, nombre y cierre de sesión.
+- [x] Incorporar administración de trabajadores y roles con validación en servidor y SQL propuesto.
+- [x] Entregar inspección SQL, instalación manual, autorización por roles y pruebas con ROLLBACK.
+- [x] Probar 28 reglas locales, acceso público y compilación; documentar límites.
+- [ ] Inspeccionar esquema remoto y aprobar/instalar permisos; configurar Auth y variables de servidor en Vercel. Bloqueado: conexión externa no disponible aquí.
+- [ ] Verificar inicio/cierre de sesión real, creación de trabajadores, roles y persistencia con cuentas autorizadas. Bloqueado: configuración e instalación manual anteriores.
 
 - [x] Revisar código y esquema confirmado por el usuario; no hay acceso a la base externa desde este entorno.
 - [x] Conectar consulta y formulario de Movimientos conservando diseño, filtros, navegación y estados de carga/error/reintento/vacío.
