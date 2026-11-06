@@ -8,7 +8,6 @@ export type NuevoMovimiento = {
   tipo: "entrada" | "salida";
   cantidad: number;
   fecha: string;
-  usuario?: string;
   motivo?: string;
   observacion?: string;
 };
@@ -40,7 +39,8 @@ export function parametrosMovimiento(m: NuevoMovimiento) {
     p_tipo: m.tipo,
     p_cantidad: m.cantidad,
     p_fecha: fechaMovimiento(m.fecha),
-    p_usuario_responsable: opcional(m.usuario),
+    // La base ignora este valor y toma el responsable de auth.uid() y profiles; se envía null solo para coincidir con la firma.
+    p_usuario_responsable: null,
     p_motivo: opcional(m.motivo),
     p_observacion: opcional(m.observacion),
   };
@@ -65,6 +65,7 @@ export function filaAMovimiento(fila: Record<string, unknown>): Movimiento {
     cantidad: Number(fila["cantidad"]),
     fecha: String(fila["fecha"] ?? "").slice(0, 10),
     usuario: String(fila["usuario_responsable"] ?? "—"),
+    usuarioId: typeof fila["usuario_id"] === "string" ? fila["usuario_id"] : null,
     nota: [fila["motivo"], fila["observacion"]].filter(Boolean).join(" · "),
   };
 }
@@ -116,7 +117,7 @@ export function useMovimientosSupabase() {
       };
       const [p, m] = await Promise.all([
         leerTodo("productos", "id,nombre,categoria,cantidad,stock_minimo,marca,modelo,precio_compra,created_at"),
-        leerTodo("movimientos", "id,producto_id,tipo,cantidad,motivo,usuario_responsable,fecha,observacion,created_at"),
+        leerTodo("movimientos", "id,producto_id,tipo,cantidad,motivo,usuario_responsable,usuario_id,fecha,observacion,created_at"),
       ]);
       const productos = p.map((fila) => ({ ...filaAProducto(fila), id: idReal(fila["id"]) }));
       const movimientos = m.map(filaAMovimiento);
