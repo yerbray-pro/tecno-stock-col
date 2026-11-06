@@ -25,8 +25,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const access = await comprobarAcceso();
     let nombre = "";
     if (access?.user && supabase) {
-      const { data } = await supabase.from("profiles").select("nombre").eq("id", access.user.id).maybeSingle();
-      nombre = typeof data?.nombre === "string" ? data.nombre : access.user.email ?? "";
+      const { data } = await supabase.from("profiles").select("full_name").eq("id", access.user.id).maybeSingle();
+      const fullName = typeof data?.full_name === "string" ? data.full_name.trim() : "";
+      nombre = fullName || access.user.email || "";
     }
     setState({ user: access?.user ?? null, rol: access?.rol ?? null, nombre, cargando: false });
   }
