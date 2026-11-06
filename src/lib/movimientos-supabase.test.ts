@@ -17,7 +17,14 @@ describe("reglas de movimientos reales", () => {
   it("envía fecha timestamptz colombiana", () => expect(fechaMovimiento("2026-10-28")).toBe("2026-10-28T00:00:00-05:00"));
   it("envía fecha vacía como null para now de PostgreSQL", () => expect(fechaMovimiento("")).toBeNull());
   it("omite id identity y mantiene campos opcionales", () => {
-    expect(parametrosMovimiento({ ...movimiento, usuario: " ", motivo: " Ajuste ", observacion: " " })).toEqual({ p_producto_id: "12", p_tipo: "salida", p_cantidad: 1, p_fecha: "2026-10-28T00:00:00-05:00", p_usuario_responsable: null, p_motivo: "Ajuste", p_observacion: null });
+    expect(parametrosMovimiento({ ...movimiento, motivo: " Ajuste ", observacion: " " })).toEqual({ p_producto_id: "12", p_tipo: "salida", p_cantidad: 1, p_fecha: "2026-10-28T00:00:00-05:00", p_usuario_responsable: null, p_motivo: "Ajuste", p_observacion: null });
+  });
+  it("nunca envía el responsable desde el navegador", () => {
+    const p = parametrosMovimiento({ ...movimiento, usuario: "Suplantador" } as never);
+    expect(p.p_usuario_responsable).toBeNull();
+  });
+  it("lee usuario_id y conserva el nombre del responsable", () => {
+    expect(filaAMovimiento({ id: 1, producto_id: 12, tipo: "salida", cantidad: 1, fecha: "2026-11-06T13:00:00Z", usuario_id: "a1b2c3d4-0000-4000-8000-000000000000", usuario_responsable: "Ana Pérez" })).toMatchObject({ usuario: "Ana Pérez", usuarioId: "a1b2c3d4-0000-4000-8000-000000000000" });
   });
   it("mapea columnas reales sin usar datos simulados", () => {
     expect(filaAMovimiento({ id: 22, producto_id: 12, tipo: "entrada", cantidad: 3, fecha: "2026-10-28T05:00:00Z", usuario_responsable: null, motivo: "Compra", observacion: null })).toMatchObject({ id: "22", productoId: "12", tipo: "entrada", cantidad: 3, usuario: "—", nota: "Compra" });

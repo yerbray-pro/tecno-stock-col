@@ -18,6 +18,7 @@ export type Movimiento = {
   cantidad: number;
   fecha: string;
   usuario: string;
+  usuarioId?: string | null;
   nota?: string;
 };
 

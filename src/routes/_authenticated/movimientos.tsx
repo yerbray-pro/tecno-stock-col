@@ -62,7 +62,6 @@ function Movimientos() {
                 tipo: form.tipo,
                 cantidad,
                 fecha: form.fecha,
-                usuario: auth.nombre,
               });
               setAviso(
                 r.ok
