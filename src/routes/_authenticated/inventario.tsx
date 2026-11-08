@@ -10,8 +10,9 @@ import {
 } from "@/components/AppShell";
 import { estadoDeProducto, type Producto } from "@/lib/data";
 import { fechaCorta, pesos } from "@/lib/format";
-import { useTienda } from "@/lib/store";
-import { useProductosSupabase, validarProducto } from "@/lib/productos-supabase";
+import { useQueryClient } from "@tanstack/react-query";
+import { CLAVE_INVENTARIO, useInventarioReal } from "@/lib/movimientos-supabase";
+import { crearProducto, validarProducto } from "@/lib/productos-supabase";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/inventario")({
@@ -37,8 +38,14 @@ export const Route = createFileRoute("/_authenticated/inventario")({
 
 function Inventario() {
   const auth = useAuth();
-  const { movimientos } = useTienda();
-  const { estado: carga, recargar, crear } = useProductosSupabase();
+  const queryClient = useQueryClient();
+  const { estado: carga, recargar } = useInventarioReal();
+  const movimientos = carga.tipo === "listo" ? carga.movimientos : [];
+  const crear = async (p: Parameters<typeof crearProducto>[0]) => {
+    const r = await crearProducto(p);
+    if (r.ok) await queryClient.invalidateQueries({ queryKey: CLAVE_INVENTARIO });
+    return r;
+  };
   const [aviso, setAviso] = useState<string | null>(null);
   const productos = carga.tipo === "listo" ? carga.productos : [];
   const [busqueda, setBusqueda] = useState("");

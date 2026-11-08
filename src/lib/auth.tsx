@@ -3,15 +3,15 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useRouter } from "@tanstack/react-router";
 import type { User } from "@supabase/supabase-js";
 import { supabase } from "./supabase";
-import { esRol, type Rol } from "./auth-rules";
+import { rolDesdeBase, type Rol } from "./auth-rules";
 
 export async function comprobarAcceso() {
   if (!supabase) return null;
   const { data, error } = await supabase.auth.getUser();
   if (error || !data.user) return null;
   const { data: rol, error: roleError } = await supabase.rpc("tecnostock_role");
-  if (roleError || !esRol(rol)) return { user: data.user, rol: null };
-  return { user: data.user, rol };
+  const normalizado = roleError ? null : rolDesdeBase(rol);
+  return { user: data.user, rol: normalizado };
 }
 
 type Auth = { user: User | null; rol: Rol | null; nombre: string; cargando: boolean; salir: () => Promise<void>; actualizar: () => Promise<void> };
