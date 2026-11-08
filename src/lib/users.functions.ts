@@ -37,7 +37,7 @@ export const crearTrabajador = createServerFn({ method: "POST" })
     if (!secret) throw new Error("Falta configurar la clave administrativa exclusivamente en el servidor.");
     // Privileged client is created only after validating identity AND role with RLS.
     const admin = createClient(url, secret, { auth: { persistSession: false, autoRefreshToken: false } });
-    const { data: created, error } = await admin.auth.admin.createUser({ email: data.correo, password: data.password, email_confirm: true, user_metadata: { nombre: data.nombre } });
+    const { data: created, error } = await admin.auth.admin.createUser({ email: data.correo, password: data.password, email_confirm: true, user_metadata: { full_name: data.nombre } });
     if (error || !created.user) {
       if (error?.code === "email_exists" || error?.code === "user_already_exists") throw new Error("Ya existe una cuenta con ese correo.");
       throw new Error("No se pudo crear la cuenta. Revisa la configuración de autenticación.");
