@@ -5,7 +5,7 @@ import { GraficoBarras, LeyendaGrafico, MiniLinea } from "@/components/GraficoBa
 import { clavesDeMeses, pronosticar, recomendaciones, serieMensual } from "@/lib/analisis";
 import { eventosComerciales } from "@/lib/data";
 import { etiquetaMes, numero } from "@/lib/format";
-import { useTienda } from "@/lib/store";
+import { useInventarioReal } from "@/lib/movimientos-supabase";
 
 export const Route = createFileRoute("/_authenticated/analisis")({
   head: () => ({
@@ -29,7 +29,9 @@ export const Route = createFileRoute("/_authenticated/analisis")({
 });
 
 function Analisis() {
-  const { productos, movimientos } = useTienda();
+  const { estado: carga, recargar } = useInventarioReal();
+  const productos = carga.tipo === "listo" ? carga.productos : [];
+  const movimientos = carga.tipo === "listo" ? carga.movimientos : [];
   const [eventoId, setEventoId] = useState("ninguno");
   const evento = eventosComerciales.find((e) => e.id === eventoId);
   const factor = evento?.factor ?? 1;

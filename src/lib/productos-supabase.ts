@@ -87,7 +87,7 @@ export async function crearProducto(p: NuevoProducto): Promise<{ ok: true } | { 
   if (invalido) return { ok: false, error: invalido };
   if (!supabase) return { ok: false, error: "La conexión con la base de datos no está configurada." };
   const { error } = await supabase.from("productos").insert({
-    nombre: p.nombre.trim(), categoria: p.categoria.trim(), marca: p.marca.trim() || null,
+    nombre: p.nombre.trim(), categoria: p.categoria.trim(), marca: p.marca.trim(),
     cantidad: p.stock, stock_minimo: p.stockMinimo, precio_compra: p.precioCompra,
   });
   if (error) {

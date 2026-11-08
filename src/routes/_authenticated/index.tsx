@@ -4,7 +4,7 @@ import { GraficoBarras, LeyendaGrafico } from "@/components/GraficoBarras";
 import { clavesDeMeses, recomendaciones, serieMensual } from "@/lib/analisis";
 import { estadoDeProducto, eventosComerciales } from "@/lib/data";
 import { numero, pesos } from "@/lib/format";
-import { useTienda } from "@/lib/store";
+import { useInventarioReal } from "@/lib/movimientos-supabase";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -36,7 +36,9 @@ const FONDO_EVENTO: Record<string, string> = {
 };
 
 function Dashboard() {
-  const { productos, movimientos } = useTienda();
+  const { estado: carga, recargar } = useInventarioReal();
+  const productos = carga.tipo === "listo" ? carga.productos : [];
+  const movimientos = carga.tipo === "listo" ? carga.movimientos : [];
   const meses = clavesDeMeses(6);
   const serie = serieMensual(movimientos, meses);
 
