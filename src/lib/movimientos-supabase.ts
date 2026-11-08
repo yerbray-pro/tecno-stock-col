@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useCallback, useRef, useState } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import type { Movimiento, Producto } from "./data";
 import { filaAProducto } from "./productos-supabase";
 import { supabase } from "./supabase";
@@ -87,47 +88,52 @@ type Carga =
   | { tipo: "listo"; productos: Producto[]; movimientos: Movimiento[] };
 type Resultado = { ok: true; actualizado: boolean } | { ok: false; error: string };
 
+/** Clave única compartida: Dashboard, Inventario, Movimientos y Análisis leen los mismos datos. */
+export const CLAVE_INVENTARIO = ["inventario"] as const;
+
+async function leerInventario(): Promise<{ productos: Producto[]; movimientos: Movimiento[] }> {
+  if (!supabase) throw new Error("La conexión no está configurada en esta vista previa. Faltan VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY.");
+  const cliente = supabase;
+  const leerTodo = async (tabla: "productos" | "movimientos", columnas: string) => {
+    const filas: Record<string, unknown>[] = [];
+    for (let desde = 0; ; desde += 1000) {
+      let consulta = cliente.from(tabla).select(columnas);
+      if (tabla === "movimientos") consulta = consulta.order("fecha", { ascending: false });
+      const { data, error } = await consulta.order("id", { ascending: tabla === "productos" }).range(desde, desde + 999);
+      if (error) throw new Error(`No se pudo leer ${tabla}: ${error.message}`);
+      const lote = (data ?? []) as unknown as Record<string, unknown>[];
+      filas.push(...lote);
+      if (lote.length < 1000) return filas;
+    }
+  };
+  const [p, m] = await Promise.all([
+    leerTodo("productos", "id,nombre,categoria,cantidad,stock_minimo,marca,modelo,precio_compra,created_at"),
+    leerTodo("movimientos", "id,producto_id,tipo,cantidad,motivo,usuario_responsable,usuario_id,fecha,observacion,created_at"),
+  ]);
+  return {
+    productos: p.map((fila) => ({ ...filaAProducto(fila), id: idReal(fila["id"]) })),
+    movimientos: m.map(filaAMovimiento),
+  };
+}
+
+/** Lectura compartida (React Query) de productos y movimientos reales. */
+export function useInventarioReal() {
+  const query = useQuery({ queryKey: CLAVE_INVENTARIO, queryFn: leerInventario, staleTime: 30_000, retry: 1 });
+  const estado: Carga = query.isPending
+    ? { tipo: "cargando" }
+    : query.isError
+      ? { tipo: "error", mensaje: query.error instanceof Error ? query.error.message : "No se pudo leer el inventario." }
+      : { tipo: "listo", ...query.data };
+  const recargar = useCallback(async () => !(await query.refetch()).isError, [query]);
+  return { estado, recargar, actualizando: query.isFetching };
+}
+
 export function useMovimientosSupabase() {
-  const [estado, setEstado] = useState<Carga>({ tipo: "cargando" });
+  const { estado, recargar } = useInventarioReal();
+  const queryClient = useQueryClient();
   const [guardando, setGuardando] = useState(false);
   const ocupado = useRef(false);
   const incierto = useRef(false);
-  const lectura = useRef(0);
-
-  const recargar = useCallback(async () => {
-    const version = ++lectura.current;
-    if (!supabase) {
-      setEstado({ tipo: "error", mensaje: "La conexión no está configurada en esta vista previa. Faltan VITE_SUPABASE_URL y VITE_SUPABASE_PUBLISHABLE_KEY." });
-      return false;
-    }
-    setEstado({ tipo: "cargando" });
-    try {
-      const leerTodo = async (tabla: "productos" | "movimientos", columnas: string) => {
-        const filas: Record<string, unknown>[] = [];
-        for (let desde = 0; ; desde += 1000) {
-          if (!supabase) throw new Error("La conexión no está configurada.");
-          let consulta = supabase.from(tabla).select(columnas);
-          if (tabla === "movimientos") consulta = consulta.order("fecha", { ascending: false });
-          const { data, error } = await consulta.order("id", { ascending: tabla === "productos" }).range(desde, desde + 999);
-          if (error) throw error;
-          const lote = (data ?? []) as unknown as Record<string, unknown>[];
-          filas.push(...lote);
-          if (lote.length < 1000) return filas;
-        }
-      };
-      const [p, m] = await Promise.all([
-        leerTodo("productos", "id,nombre,categoria,cantidad,stock_minimo,marca,modelo,precio_compra,created_at"),
-        leerTodo("movimientos", "id,producto_id,tipo,cantidad,motivo,usuario_responsable,usuario_id,fecha,observacion,created_at"),
-      ]);
-      const productos = p.map((fila) => ({ ...filaAProducto(fila), id: idReal(fila["id"]) }));
-      const movimientos = m.map(filaAMovimiento);
-      if (version === lectura.current) setEstado({ tipo: "listo", productos, movimientos });
-      return true;
-    } catch (error) {
-      if (version === lectura.current) setEstado({ tipo: "error", mensaje: error instanceof Error ? error.message : "No se pudo leer el inventario y el historial. Revisa la conexión y los permisos de lectura." });
-      return false;
-    }
-  }, []);
 
   const registrar = async (m: NuevoMovimiento): Promise<Resultado> => {
     if (ocupado.current) return { ok: false, error: "Hay un movimiento en proceso." };
@@ -147,9 +153,11 @@ export function useMovimientosSupabase() {
       }
       if (!Array.isArray(data) || data.length !== 1 || !data[0]?.movimiento_id) {
         incierto.current = true;
+        await queryClient.invalidateQueries({ queryKey: CLAVE_INVENTARIO });
         return { ok: false, error: "La respuesta no permite confirmar el registro. Revisa el historial antes de volver a intentarlo." };
       }
-      return { ok: true, actualizado: await recargar() };
+      await queryClient.invalidateQueries({ queryKey: CLAVE_INVENTARIO });
+      return { ok: true, actualizado: !queryClient.getQueryState(CLAVE_INVENTARIO)?.error };
     } catch {
       incierto.current = true;
       return { ok: false, error: "Se perdió la conexión. El movimiento podría haberse guardado; revisa el historial antes de repetirlo." };
@@ -159,6 +167,5 @@ export function useMovimientosSupabase() {
     }
   };
 
-  useEffect(() => { void recargar(); }, [recargar]);
   return { estado, recargar, registrar, guardando };
 }

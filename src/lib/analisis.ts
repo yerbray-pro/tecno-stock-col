@@ -3,7 +3,12 @@ import { estadoDeProducto } from "./data";
 
 export type SerieMes = { clave: string; entradas: number; salidas: number };
 
-export function clavesDeMeses(cantidad: number, hasta = "2026-09"): string[] {
+export function mesActual(): string {
+  // Mes actual en hora de Colombia.
+  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7);
+}
+
+export function clavesDeMeses(cantidad: number, hasta = mesActual()): string[] {
   const [a0 = 0, m0 = 1] = hasta.split("-").map(Number);
   const claves: string[] = [];
   for (let i = cantidad - 1; i >= 0; i--) {

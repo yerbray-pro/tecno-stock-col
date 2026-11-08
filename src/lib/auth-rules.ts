@@ -13,3 +13,12 @@ export const cambioRol = z.object({ userId: z.string().uuid(), rol: z.enum(["adm
 export function puedeGestionar(actor: Rol | null, actorId: string, targetId: string, principal: boolean) {
   return actor === "administrador" && actorId !== targetId && !principal;
 }
+/** La base guarda admin/user; la app muestra administrador/trabajador. */
+export function rolDesdeBase(value: unknown): Rol | null {
+  if (value === "admin" || value === "administrador") return "administrador";
+  if (value === "user" || value === "trabajador") return "trabajador";
+  return null;
+}
+export function rolABase(rol: Rol): "admin" | "user" {
+  return rol === "administrador" ? "admin" : "user";
+}

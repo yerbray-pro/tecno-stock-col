@@ -81,6 +81,22 @@ export function validarProducto(p: NuevoProducto): string | null {
   return null;
 }
 
+/** Inserta un producto (RLS decide si el usuario puede). Devuelve error legible. */
+export async function crearProducto(p: NuevoProducto): Promise<{ ok: true } | { ok: false; error: string }> {
+  const invalido = validarProducto(p);
+  if (invalido) return { ok: false, error: invalido };
+  if (!supabase) return { ok: false, error: "La conexión con la base de datos no está configurada." };
+  const { error } = await supabase.from("productos").insert({
+    nombre: p.nombre.trim(), categoria: p.categoria.trim(), marca: p.marca.trim() || null,
+    cantidad: p.stock, stock_minimo: p.stockMinimo, precio_compra: p.precioCompra,
+  });
+  if (error) {
+    if (error.code === "42501") return { ok: false, error: "No tienes permiso para crear productos. Solo un administrador puede hacerlo." };
+    return { ok: false, error: `No se pudo guardar el producto: ${error.message}` };
+  }
+  return { ok: true };
+}
+
 export function useProductosSupabase() {
   const [estado, setEstado] = useState<EstadoCarga>({ tipo: "cargando" });
   const [ejemplo, setEjemplo] = useState<Fila | undefined>(undefined);
