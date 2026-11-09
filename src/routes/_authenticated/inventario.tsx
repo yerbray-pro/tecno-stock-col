@@ -12,7 +12,7 @@ import { estadoDeProducto, type Producto } from "@/lib/data";
 import { fechaCorta, pesos } from "@/lib/format";
 import { useQueryClient } from "@tanstack/react-query";
 import { CLAVE_INVENTARIO, useInventarioReal } from "@/lib/movimientos-supabase";
-import { crearProducto, validarProducto } from "@/lib/productos-supabase";
+import { crearProducto, editarProducto, validarProducto } from "@/lib/productos-supabase";
 import { useAuth } from "@/lib/auth";
 
 export const Route = createFileRoute("/_authenticated/inventario")({
@@ -52,6 +52,7 @@ function Inventario() {
   const [categoria, setCategoria] = useState("Todas");
   const [estadoFiltro, setEstadoFiltro] = useState("Todos");
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
+  const [editando, setEditando] = useState<Producto | null>(null);
   const [formAbierto, setFormAbierto] = useState(false);
 
   const categorias = useMemo(
@@ -91,17 +92,20 @@ function Inventario() {
         </BotonPrimario>
       }
     >
-      {formAbierto && auth.rol === "administrador" && (
+      {(formAbierto || editando) && auth.rol === "administrador" && (
         <FormularioProducto
+          key={editando?.id ?? "nuevo"}
+          inicial={editando ?? undefined}
           onGuardar={async (p) => {
-            const r = await crear(p);
+            const r = editando ? await editarProducto({ ...p, id: editando.id, registrado: editando.registrado }) : await crear(p);
+            if (editando && r.ok) await queryClient.invalidateQueries({ queryKey: CLAVE_INVENTARIO });
             if (r.ok) {
-              setFormAbierto(false);
+              setFormAbierto(false); setEditando(null);
               setAviso(`«${p.nombre}» se guardó correctamente en el inventario.`);
             }
             return r;
           }}
-          onCancelar={() => setFormAbierto(false)}
+          onCancelar={() => { setFormAbierto(false); setEditando(null); }}
         />
       )}
 
@@ -230,6 +234,7 @@ function Inventario() {
               <BotonSuave onClick={() => setSeleccionado(null)}>Cerrar</BotonSuave>
             </div>
 
+            {auth.rol === "administrador" && <BotonSuave className="mt-3" onClick={() => { setEditando(detalle); setFormAbierto(false); }}>Editar producto</BotonSuave>}
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <Dato titulo="Stock actual" valor={String(detalle.stock)} />
               <Dato titulo="Stock mínimo" valor={String(detalle.stockMinimo)} />
@@ -281,28 +286,31 @@ function Dato({ titulo, valor }: { titulo: string; valor: string }) {
 }
 
 function FormularioProducto({
+  inicial,
   onGuardar,
   onCancelar,
 }: {
+  inicial?: Producto;
   onGuardar: (
     p: Omit<Producto, "id" | "registrado">,
   ) => Promise<{ ok: true } | { ok: false; error: string }>;
   onCancelar: () => void;
 }) {
   const [form, setForm] = useState({
-    nombre: "",
-    categoria: "Accesorios",
-    marca: "",
-    stock: "0",
-    stockMinimo: "5",
-    precioCompra: "0",
+    nombre: inicial?.nombre ?? "",
+    categoria: inicial?.categoria ?? "Accesorios",
+    marca: inicial?.marca ?? "",
+    modelo: inicial?.modelo ?? "",
+    stock: String(inicial?.stock ?? 0),
+    stockMinimo: String(inicial?.stockMinimo ?? 5),
+    precioCompra: String(inicial?.precioCompra ?? 0),
   });
   const [guardando, setGuardando] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   return (
     <Panel className="p-5">
-      <h2 className="font-display text-base font-semibold tracking-tight">Agregar producto</h2>
+      <h2 className="font-display text-base font-semibold tracking-tight">{inicial ? "Editar producto" : "Agregar producto"}</h2>
       <form
         className="mt-4 grid gap-3 sm:grid-cols-3"
         onSubmit={async (e) => {
@@ -316,7 +324,8 @@ function FormularioProducto({
           const nuevo = {
             nombre: form.nombre.trim(),
             categoria: form.categoria,
-            marca: form.marca.trim() || "Genérica",
+            marca: form.marca.trim(),
+            modelo: form.modelo.trim(),
             stock: Number(form.stock),
             stockMinimo: Number(form.stockMinimo),
             precioCompra: Number(form.precioCompra),
@@ -328,9 +337,9 @@ function FormularioProducto({
           }
           setError(null);
           setGuardando(true);
-          const r = await onGuardar(nuevo);
-          setGuardando(false);
-          if (!r.ok) setError(r.error);
+          try { const r = await onGuardar(nuevo); if (!r.ok) setError(r.error); }
+          catch { setError("No se pudo confirmar. Consulta el inventario antes de repetir el guardado."); }
+          finally { setGuardando(false); }
         }}
       >
         <Campo label="Nombre del producto">
@@ -362,11 +371,13 @@ function FormularioProducto({
             placeholder="Ej: SoundWave"
           />
         </Campo>
-        <Campo label="Stock actual">
+        <Campo label="Modelo o variante"><input className="campo" maxLength={120} value={form.modelo} onChange={e => setForm({ ...form, modelo: e.target.value })}/></Campo>
+        <Campo label={inicial ? "Stock (solo lectura)" : "Existencias iniciales (entrada atómica)"}>
           <input
             type="number"
             min="0"
             value={form.stock}
+            disabled={Boolean(inicial)}
             onChange={(e) => setForm({ ...form, stock: e.target.value })}
             className="campo"
           />
