@@ -53,7 +53,7 @@ function Analisis() {
       <section className="space-y-3">
         <h2 className="font-display text-base font-semibold">Productos que necesitan reposición</h2>
         <ul className="grid gap-3 lg:grid-cols-2">{necesidades.map(r => <li key={r.producto.id} className="rounded-lg border border-line p-3">
-          <div className="flex flex-wrap justify-between gap-2"><span className="font-medium">{r.producto.nombre}</span><Etiqueta tono={r.prioridad === "Urgente" ? "rose" : "amber"}>{r.prioridad}</Etiqueta></div>
+          <div className="flex flex-wrap justify-between gap-2"><span className="font-medium">{r.producto.nombre}</span><Etiqueta tono={r.prioridad === "Urgente" ? "rose" : "amber"}>{r.prioridad === "Urgente" ? "Agotado — Urgente" : r.prioridad}</Etiqueta></div>
           <p className="mt-2 text-xs text-ink-soft">{r.mensaje}</p>
           {auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: r.producto.id }} className="mt-2 inline-block text-xs text-brand">Crear solicitud de compra →</Link>}
         </li>)}</ul>
