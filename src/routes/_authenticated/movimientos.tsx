@@ -4,6 +4,9 @@ import { AppShell, BotonPrimario, BotonSuave, Etiqueta, Panel } from "@/componen
 import { useAuth } from "@/lib/auth";
 import { fechaCorta } from "@/lib/format";
 import { useMovimientosSupabase } from "@/lib/movimientos-supabase";
+import { FILTROS_VACIOS, filtrarHistorial, paginar, type FiltrosHistorial } from "@/lib/historial";
+
+const POR_PAGINA = 20;
 
 export const Route = createFileRoute("/_authenticated/movimientos")({
   head: () => ({
@@ -31,7 +34,10 @@ function Movimientos() {
   const { estado, recargar, registrar, guardando } = useMovimientosSupabase();
   const productos = estado.tipo === "listo" ? estado.productos : [];
   const movimientos = estado.tipo === "listo" ? estado.movimientos : [];
-  const [filtro, setFiltro] = useState("Todos");
+  const [filtros, setFiltros] = useState<FiltrosHistorial>(FILTROS_VACIOS);
+  const [pagina, setPagina] = useState(1);
+  const cambiar = (c: Partial<FiltrosHistorial>) => { setFiltros((f) => ({ ...f, ...c })); setPagina(1); };
+  const hayFiltros = JSON.stringify(filtros) !== JSON.stringify(FILTROS_VACIOS);
   const [aviso, setAviso] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
   const [form, setForm] = useState({
     productoId: "",
@@ -40,7 +46,8 @@ function Movimientos() {
     fecha: "",
   });
 
-  const lista = movimientos.filter((m) => filtro === "Todos" || m.tipo === filtro.toLowerCase());
+  const lista = filtrarHistorial(movimientos, productos, filtros);
+  const pag = paginar(lista, pagina, POR_PAGINA);
   const productoId = form.productoId || productos[0]?.id || "";
   const nombre = (id: string) => productos.find((p) => p.id === id)?.nombre ?? "—";
 
@@ -173,18 +180,34 @@ function Movimientos() {
               <p className="text-xs text-ink-faint">{estado.tipo === "listo" ? `${lista.length} registros` : "—"}</p>
             </div>
             <div className="flex gap-1.5">
-              {["Todos", "Entrada", "Salida"].map((f) => (
+              {(["todos", "entrada", "salida"] as const).map((f) => (
                 <BotonSuave
                   key={f}
-                  onClick={() => setFiltro(f)}
-                  className={filtro === f ? "border-brand bg-brand/8 text-brand" : ""}
+                  aria-pressed={filtros.tipo === f}
+                  onClick={() => cambiar({ tipo: f })}
+                  className={filtros.tipo === f ? "border-brand bg-brand/8 text-brand" : ""}
                 >
-                  {f}
+                  {f === "todos" ? "Todos" : f === "entrada" ? "Entrada" : "Salida"}
                 </BotonSuave>
               ))}
             </div>
           </div>
-          {estado.tipo === "listo" && lista.length === 0 && <p className="px-5 py-4 text-sm text-ink-faint">No hay movimientos registrados{filtro === "Todos" ? "." : ` de ${filtro.toLowerCase()}.`}</p>}
+          <div className="grid gap-2 border-b border-line px-5 py-3 sm:grid-cols-[1fr_auto_auto_auto] sm:items-end">
+            <label className="block">
+              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-faint">Buscar producto</span>
+              <input type="search" placeholder="Nombre o código" value={filtros.texto} onChange={(e) => cambiar({ texto: e.target.value })} className="campo mt-1" />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-faint">Desde</span>
+              <input type="date" value={filtros.desde} max={filtros.hasta || undefined} onChange={(e) => cambiar({ desde: e.target.value })} className="campo mt-1" />
+            </label>
+            <label className="block">
+              <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-faint">Hasta</span>
+              <input type="date" value={filtros.hasta} min={filtros.desde || undefined} onChange={(e) => cambiar({ hasta: e.target.value })} className="campo mt-1" />
+            </label>
+            <BotonSuave disabled={!hayFiltros} onClick={() => cambiar(FILTROS_VACIOS)}>Limpiar filtros</BotonSuave>
+          </div>
+          {estado.tipo === "listo" && lista.length === 0 && <p className="px-5 py-4 text-sm text-ink-faint">{hayFiltros ? "Ningún movimiento coincide con los filtros." : "No hay movimientos registrados."}</p>}
           <div className="max-h-[70vh] overflow-auto">
             <table className="w-full text-left text-sm">
               <thead className="sticky top-0 bg-panel">
@@ -193,15 +216,17 @@ function Movimientos() {
                   <th className="px-3 py-2.5 font-medium">Tipo</th>
                   <th className="px-3 py-2.5 text-right font-medium">Cantidad</th>
                   <th className="px-3 py-2.5 font-medium">Fecha</th>
-                  <th className="px-5 py-2.5 font-medium">Usuario</th>
+                  <th className="px-3 py-2.5 font-medium">Responsable</th>
+                  <th className="px-3 py-2.5 font-medium">Motivo</th>
+                  <th className="px-5 py-2.5 font-medium">Observación</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {lista.map((m) => (
+                {pag.items.map((m) => (
                   <tr key={m.id} className="hover:bg-canvas/60">
                     <td className="px-5 py-3">
                       <p className="font-medium">{nombre(m.productoId)}</p>
-                      {m.nota && <p className="text-[11px] text-ink-faint">{m.nota}</p>}
+                      <p className="text-[11px] text-ink-faint">Código {m.productoId}</p>
                     </td>
                     <td className="px-3 py-3">
                       <Etiqueta tono={m.tipo === "entrada" ? "brand" : "teal"} punto>
@@ -213,12 +238,23 @@ function Movimientos() {
                       {m.cantidad}
                     </td>
                     <td className="px-3 py-3 text-ink-soft">{fechaCorta(m.fecha)}</td>
-                    <td className="px-5 py-3 text-ink-soft">{m.usuario}</td>
+                    <td className="px-3 py-3 text-ink-soft">{m.usuario}</td>
+                    <td className="px-3 py-3 text-ink-soft">{m.motivo || "—"}</td>
+                    <td className="px-5 py-3 text-ink-soft">{m.observacion || "—"}</td>
                   </tr>
                 ))}
               </tbody>
             </table>
           </div>
+          {pag.total > 1 && (
+            <div className="flex items-center justify-between gap-2 border-t border-line px-5 py-3 text-xs text-ink-faint">
+              <span>Página {pag.actual} de {pag.total}</span>
+              <div className="flex gap-1.5">
+                <BotonSuave disabled={pag.actual === 1} onClick={() => setPagina(pag.actual - 1)}>Anterior</BotonSuave>
+                <BotonSuave disabled={pag.actual === pag.total} onClick={() => setPagina(pag.actual + 1)}>Siguiente</BotonSuave>
+              </div>
+            </div>
+          )}
         </Panel>
       </div>
     </AppShell>

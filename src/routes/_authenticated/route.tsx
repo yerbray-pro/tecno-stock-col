@@ -1,5 +1,6 @@
 import { createFileRoute, Outlet, redirect } from "@tanstack/react-router";
 import { comprobarAcceso } from "@/lib/auth";
+import { useInventarioRealtime } from "@/lib/realtime";
 
 // External Supabase: the session is persisted by the existing browser client.
 export const Route = createFileRoute("/_authenticated")({
@@ -9,5 +10,10 @@ export const Route = createFileRoute("/_authenticated")({
     if (!access?.rol) throw redirect({ to: "/auth", replace: true });
     return { access };
   },
-  component: () => <Outlet />,
+  component: LayoutPrivado,
 });
+
+function LayoutPrivado() {
+  useInventarioRealtime();
+  return <Outlet />;
+}
