@@ -9,7 +9,7 @@ import { fechaCorta, pesos } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/proveedores")({
   beforeLoad: ({ context }) => { if (context.access?.rol !== "administrador") throw redirect({ to: "/", replace: true }); },
-  validateSearch: (search: Record<string, unknown>) => ({ producto: typeof search.producto === "string" ? search.producto : "" }),
+  validateSearch: (search: Record<string, unknown>) => ({ producto: typeof search["producto"] === "string" ? search["producto"] : "" }),
   head: () => ({ meta: [{ title: "Proveedores y compras — TecnoStock" }, { name: "description", content: "Catálogo de cotizaciones reales, órdenes de compra y recepción de mercancía de TecnoStock." }, { property: "og:title", content: "Proveedores y compras — TecnoStock" }, { property: "og:description", content: "Administración privada de proveedores y recepciones de inventario." }, { property: "og:type", content: "website" }, { name: "twitter:card", content: "summary" }] }),
   component: Proveedores,
 });

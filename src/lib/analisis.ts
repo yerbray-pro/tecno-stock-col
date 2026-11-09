@@ -145,15 +145,10 @@ export function recomendaciones(
       };
     }
 
-    let prioridad: Recomendacion["prioridad"] = "Planear";
-    if (estado === "Agotado") prioridad = "Urgente";
-    else if (estado === "Stock bajo") prioridad = "Reponer";
-    else if (p.tendencia === "aumento" && producto.stock < p.estimado) prioridad = "Reponer";
+    const prioridad: Recomendacion["prioridad"] = "Planear";
 
     let mensaje = "";
-    if (estado === "Agotado") {
-      mensaje = `Sin unidades disponibles. Se recomienda reponer ${p.sugerido} unidades de inmediato.`;
-    } else if (p.tendencia === "aumento") {
+    if (p.tendencia === "aumento") {
       mensaje = `Se recomienda aumentar la cantidad de reposición debido al aumento de la demanda (${p.anterior} → ${p.ultimo} unidades). Sugerido: ${p.sugerido} unidades.`;
     } else if (p.tendencia === "disminución") {
       mensaje = `La demanda viene bajando (${p.anterior} → ${p.ultimo} unidades). Se recomienda reponer solo ${p.sugerido} unidades para no acumular inventario.`;

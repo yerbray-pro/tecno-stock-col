@@ -290,7 +290,7 @@ function FormularioProducto({
   onGuardar,
   onCancelar,
 }: {
-  inicial?: Producto;
+  inicial?: Producto | undefined;
   onGuardar: (
     p: Omit<Producto, "id" | "registrado">,
   ) => Promise<{ ok: true } | { ok: false; error: string }>;
