@@ -236,7 +236,7 @@ function Analisis() {
                           : "gris"
                   }
                 >
-                  {r.prioridad}
+                  {r.prioridad === "Urgente" ? "Agotado — Urgente" : r.prioridad}
                 </Etiqueta>
               </div>
               <p className="mt-1.5 text-xs text-ink-soft">{r.mensaje}</p>

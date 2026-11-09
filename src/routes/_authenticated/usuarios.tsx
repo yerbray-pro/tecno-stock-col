@@ -31,19 +31,30 @@ function Usuarios() {
   const query = useQuery({ queryKey: ["usuarios", auth.user?.id], queryFn: () => list(), enabled: auth.rol === "administrador", retry: false });
   const [form, setForm] = useState({ nombre: "", correo: "", password: "" });
   const [busy, setBusy] = useState(false);
+  const creando = useRef(false);
   const [mensaje, setMensaje] = useState<{ ok: boolean; text: string } | null>(null);
   if (auth.rol !== "administrador") return <AppShell titulo="Usuarios" subtitulo="Administración"><p role="alert" className="text-sm text-rose">Solo el administrador puede gestionar usuarios.</p></AppShell>;
   return <AppShell titulo="Usuarios" subtitulo="Administración del equipo">
     <section className="max-w-3xl space-y-4">
       <h2 className="font-display text-base font-semibold">Crear trabajador</h2>
       <form className="grid gap-3 sm:grid-cols-3" onSubmit={async e => {
-        e.preventDefault(); if (busy) return;
+        e.preventDefault(); if (busy || creando.current) return;
         const parsed = cuentaTrabajador.safeParse(form);
         if (!parsed.success) { setMensaje({ ok: false, text: parsed.error.issues[0]?.message ?? "Revisa los datos." }); return; }
-        setBusy(true); setMensaje(null);
-        try { const result = await create({ data: parsed.data }); setMensaje({ ok: result.ok, text: result.message }); setForm({ nombre: "", correo: "", password: "" }); await query.refetch(); }
+        creando.current = true; setBusy(true); setMensaje(null);
+        try {
+          const result = await create({ data: parsed.data });
+          if (result.ok) setForm({ nombre: "", correo: "", password: "" });
+          let listaActualizada = true;
+          try {
+            const actualizada = await query.refetch();
+            listaActualizada = !actualizada.isError;
+          } catch { listaActualizada = false; }
+          // Una falla al refrescar la lista no convierte una creación confirmada en error.
+          setMensaje({ ok: result.ok, text: `${result.message}${listaActualizada ? "" : " La lista no se pudo actualizar; usa Reintentar."}` });
+        }
         catch (e) { setMensaje({ ok: false, text: e instanceof Error ? e.message : "No se pudo crear la cuenta." }); }
-        finally { setBusy(false); }
+        finally { creando.current = false; setBusy(false); }
       }}>
         <label className="text-xs text-ink-soft">Nombre<input required maxLength={120} className="campo mt-1" value={form.nombre} onChange={e => setForm({ ...form, nombre: e.target.value })} disabled={busy} /></label>
         <label className="text-xs text-ink-soft">Correo<input type="email" required className="campo mt-1" autoComplete="off" value={form.correo} onChange={e => setForm({ ...form, correo: e.target.value })} disabled={busy} /></label>
