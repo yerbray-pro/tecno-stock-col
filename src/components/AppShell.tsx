@@ -24,6 +24,7 @@ export function AppShell({
   const auth = useAuth();
   const [sessionError, setSessionError] = useState("");
   const [leaving, setLeaving] = useState(false);
+  const navegacion = NAV.filter(item => item.to !== "/proveedores" || auth.rol === "administrador");
   const accountNav = auth.rol === "administrador" ? <Link to="/usuarios" className="block px-3 py-2 text-sm text-ink-soft" activeProps={{ className: "font-medium text-brand" }}>Usuarios</Link> : null;
   return (
     <div className="min-h-screen bg-canvas font-sans text-ink">
@@ -42,7 +43,7 @@ export function AppShell({
             <p className="px-2 pb-1.5 pt-2 text-[10px] font-medium uppercase tracking-[0.14em] text-ink-faint">
               General
             </p>
-            {NAV.map((item) => (
+            {navegacion.map((item) => (
               <Link
                 key={item.to}
                 to={item.to}
@@ -81,7 +82,7 @@ export function AppShell({
               </div>
             </div>
             <nav className="flex gap-1 overflow-x-auto border-t border-line px-3 py-2 md:hidden">
-              {NAV.map((item) => (
+              {navegacion.map((item) => (
                 <Link
                   key={item.to}
                   to={item.to}

@@ -2,10 +2,18 @@ import type { Movimiento, Producto } from "./data";
 import { estadoDeProducto } from "./data";
 
 export type SerieMes = { clave: string; entradas: number; salidas: number };
+export function fechaColombia(fecha: string): string {
+  if (/^\d{4}-\d{2}-\d{2}$/.test(fecha)) return fecha;
+  const date = new Date(fecha);
+  if (!Number.isFinite(date.getTime())) return "";
+  const partes = new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit" }).formatToParts(date);
+  const part = (type: string) => partes.find(p => p.type === type)?.value ?? "";
+  return `${part("year")}-${part("month")}-${part("day")}`;
+}
 
 export function mesActual(): string {
   // Mes actual en hora de Colombia.
-  return new Intl.DateTimeFormat("en-CA", { timeZone: "America/Bogota", year: "numeric", month: "2-digit" }).format(new Date()).slice(0, 7);
+  return fechaColombia(new Date().toISOString()).slice(0, 7);
 }
 
 export function clavesDeMeses(cantidad: number, hasta = mesActual()): string[] {
@@ -27,7 +35,7 @@ export function serieMensual(
 ): SerieMes[] {
   return meses.map((clave) => {
     const delMes = movimientos.filter(
-      (m) => m.fecha.startsWith(clave) && (!productoId || m.productoId === productoId),
+      (m) => fechaColombia(m.fechaHora || m.fecha).startsWith(clave) && (!productoId || m.productoId === productoId),
     );
     return {
       clave,
@@ -73,7 +81,7 @@ export function pronosticar(
       tendencia: "estable",
       base: 0,
       estimado: 0,
-      sugerido: 0,
+      sugerido: Math.max(producto.stock === 0 || producto.stock <= producto.stockMinimo ? 1 : 0, producto.stockMinimo - producto.stock),
     };
   }
 
@@ -90,7 +98,7 @@ export function pronosticar(
   const base = promedioPonderado * (1 + Math.max(-0.4, Math.min(0.4, variacion / 100)) / 2);
   const estimado = base * factorEvento;
   const objetivo = estimado + producto.stockMinimo;
-  const sugerido = Math.max(0, Math.ceil(objetivo - producto.stock));
+  const sugerido = Math.max(producto.stock <= producto.stockMinimo ? 1 : 0, Math.ceil(objetivo - producto.stock));
 
   return {
     suficienteHistorial: true,
@@ -123,6 +131,10 @@ export function recomendaciones(
     const p = pronosticar(producto, movimientos, factorEvento);
     const estado = estadoDeProducto(producto);
 
+    if (estado !== "Disponible") {
+      return { producto, pronostico: p, prioridad: estado === "Agotado" ? "Urgente" as const : "Reponer" as const,
+        mensaje: `${estado === "Agotado" ? "Agotado — Reposición urgente." : "Stock menor o igual al mínimo."} Reponer ${p.sugerido} unidades. ${p.suficienteHistorial ? "Incluye la demanda estimada con movimientos reales." : "Necesidad mínima por existencias; historial insuficiente para un pronóstico confiable."}` };
+    }
     if (!p.suficienteHistorial) {
       return {
         producto,

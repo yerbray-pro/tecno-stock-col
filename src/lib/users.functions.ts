@@ -2,6 +2,7 @@ import { createServerFn } from "@tanstack/react-start";
 import { getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { cuentaTrabajador, cambioRol, rolABase, rolDesdeBase } from "./auth-rules";
+import { confirmarTrabajador } from "./trabajadores";
 
 // All configuration reads and privileged clients remain inside handlers.
 export const listarUsuarios = createServerFn({ method: "POST" }).handler(async () => {
@@ -42,10 +43,17 @@ export const crearTrabajador = createServerFn({ method: "POST" })
       if (error?.code === "email_exists" || error?.code === "user_already_exists") throw new Error("Ya existe una cuenta con ese correo.");
       throw new Error("No se pudo crear la cuenta. Revisa la configuración de autenticación.");
     }
-    // Revalidates the caller's role in the database; never accepts a role from create input.
-    const { error: assignmentError } = await client.rpc("tecnostock_set_role", { p_user_id: created.user.id, p_role: rolABase("trabajador") });
-    if (assignmentError) return { ok: false, message: "La cuenta se creó sin acceso. Asígnale el rol Trabajador desde la lista; no repitas la creación." };
-    return { ok: true, message: "Cuenta creada con rol Trabajador." };
+    const createdId = created.user.id;
+    // Read the actual rows with the privileged client only AFTER actor identity/role validation.
+    // Existing installations use role or rol; inspect returned fields, do not assume a column.
+    return confirmarTrabajador(async () => {
+      const { data: rows, error: readError } = await admin.from("user_roles").select("*").eq("user_id", createdId);
+      if (readError) throw new Error("No se pudieron consultar los permisos de la cuenta creada.");
+      return (rows ?? []).map(row => row.role ?? row.rol);
+    }, async () => {
+      const { error: assignmentError } = await client.rpc("tecnostock_set_role", { p_user_id: createdId, p_role: "user" });
+      if (assignmentError) throw new Error("No se pudo asignar el rol trabajador.");
+    });
   });
 
 export const asignarRol = createServerFn({ method: "POST" })

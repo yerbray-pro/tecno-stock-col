@@ -5,6 +5,7 @@ export type Producto = {
   nombre: string;
   categoria: string;
   marca: string;
+  modelo?: string;
   stock: number;
   stockMinimo: number;
   precioCompra: number;
@@ -310,6 +311,6 @@ export const eventosComerciales: EventoComercial[] = [
 
 export function estadoDeProducto(p: Producto): EstadoStock {
   if (p.stock === 0) return "Agotado";
-  if (p.stock < p.stockMinimo) return "Stock bajo";
+  if (p.stock <= p.stockMinimo) return "Stock bajo";
   return "Disponible";
 }
