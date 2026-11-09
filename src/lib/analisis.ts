@@ -133,7 +133,7 @@ export function recomendaciones(
 
     if (estado !== "Disponible") {
       return { producto, pronostico: p, prioridad: estado === "Agotado" ? "Urgente" as const : "Reponer" as const,
-        mensaje: `${estado === "Agotado" ? "Agotado — Reposición urgente." : "Stock menor o igual al mínimo."} Reponer ${p.sugerido} unidades. ${p.suficienteHistorial ? "Incluye la demanda estimada con movimientos reales." : "Necesidad mínima por existencias; historial insuficiente para un pronóstico confiable."}` };
+        mensaje: `${estado === "Agotado" ? "Agotado — Urgente." : "Stock menor o igual al mínimo."} Reponer ${p.sugerido} unidades. ${p.suficienteHistorial ? "Incluye la demanda estimada con movimientos reales." : "Necesidad mínima por existencias; historial insuficiente para un pronóstico confiable."}` };
     }
     if (!p.suficienteHistorial) {
       return {

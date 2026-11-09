@@ -1,5 +1,12 @@
 # TecnoStock: entrega y seguridad
 
+## Revisión prioritaria: datos compartidos, reposición y trabajadores
+- [x] Confirmar en código que Dashboard, Inventario, Análisis y Proveedores usan la misma consulta y que movimientos/Realtime invalidan esa clave compartida.
+- [x] Confirmar reposición para cantidad <= stock_minimo, el caso Prueba TecnoStock 001 (1/2) y la etiqueta Agotado — Urgente; 59 pruebas y compilación correctas.
+- [x] Verificar el rol user en user_roles antes de informar éxito, bloquear envíos simultáneos y evitar que una recarga fallida cambie el resultado de la creación.
+- [x] Comprobar en navegador la redirección de una ruta privada a /auth sin errores de página; no había sesión para ejercer datos reales.
+- [ ] Validar sincronización, producto real, creación/rol y ausencia de duplicados en Supabase. Bloqueado: sin conexión, variables, sesión autorizada ni SQL de compras instalado en este entorno.
+
 ## Prioridades del 9 de noviembre
 - [x] Corregir verificación del trigger y restringir promociones expuestas, menú y URL de compras; SQL de permisos propuesto.
 - [x] Unificar clasificación de stock y recomendaciones sin historial; reproducir cinco fallas y confirmar correcciones.
@@ -8,7 +15,7 @@
 - [x] Ejecutar 57 pruebas automáticas, revisar compilación correcta y entregar docs/ENTREGA_QA.md.
 - [ ] Revisar/instalar SQL compras/productos/roles y probar admin/trabajador reales. Bloqueado: sin conexión externa, credenciales o esquema inspeccionable aquí; necesita revisión manual del propietario.
 - [ ] Confirmar atomicidad/idempotencia/concurrencia y Realtime reales. Bloqueado: SQL aprobado instalado y sesiones reales.
-- [ ] Investigar avisos recuperables del router al abrir URLs privadas sin sesión. Bloqueado: error interno MatchView routeId en entorno de preview; /auth independiente funciona, reportado a plataforma.
+- [x] Comprobar las seis URLs privadas sin sesión: todas redirigen a /auth sin errores de página en la revisión actual; trabajador autenticado sigue pendiente de prueba real.
 
 ## Autenticación y usuarios
 - [x] Incorporar acceso privado, correo/contraseña, nombre y cierre de sesión.

@@ -12,6 +12,14 @@ describe("Reposición con datos reales, incluso sin historial", () => {
     expect(r?.prioridad).toBe("Urgente"); expect(r?.pronostico.sugerido).toBe(1);
   });
   it("stock igual al mínimo es bajo en todas las pantallas", () => expect(estadoDeProducto({ ...producto, stock: 2 })).toBe("Stock bajo"));
+  it("un agotado con mínimo 2 necesita dos unidades", () => {
+    const r = recomendaciones([{ ...producto, stock: 0 }], [])[0];
+    expect(r?.prioridad).toBe("Urgente"); expect(r?.pronostico.sugerido).toBe(2);
+  });
+  it("stock superior al mínimo sin historial no recomienda comprar", () => {
+    const r = recomendaciones([{ ...producto, stock: 3 }], [])[0];
+    expect(r?.prioridad).toBe("Sin datos"); expect(r?.pronostico.sugerido).toBe(0);
+  });
   it("no inventa un pronóstico para un producto nuevo", () => expect(pronosticar(producto, []).suficienteHistorial).toBe(false));
   it("ordena agotados antes de stock bajo y de productos sin historial", () => {
     const lista = recomendaciones([{ ...producto, id: "3", stock: 5 }, producto, { ...producto, id: "2", stock: 0 }], []);
