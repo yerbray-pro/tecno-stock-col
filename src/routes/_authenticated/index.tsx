@@ -61,7 +61,7 @@ function Dashboard() {
   return (
     <AppShell
       titulo="TecnoStock — Gestión inteligente de inventario"
-      subtitulo="Resumen del inventario · actualizado hoy, 08:42"
+      subtitulo={carga.tipo === "cargando" ? "Cargando datos reales…" : carga.tipo === "error" ? "No se pudieron cargar los datos" : `Resumen del inventario · ${productos.filter((p) => p.stock === 0).length} agotados`}
       acciones={
         <Link to="/movimientos">
           <BotonPrimario>
@@ -72,6 +72,9 @@ function Dashboard() {
         </Link>
       }
     >
+      {carga.tipo === "error" && (
+        <Panel className="p-4"><p role="alert" className="text-sm text-rose">{carga.mensaje}</p><button className="mt-2 text-xs font-medium text-brand hover:underline" onClick={() => void recargar()}>Reintentar</button></Panel>
+      )}
       <section className="rise grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Kpi
           titulo="Productos registrados"
