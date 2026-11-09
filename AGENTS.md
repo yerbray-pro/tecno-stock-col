@@ -13,4 +13,8 @@
 - External database changes are delivered as reviewed manual SQL under sql/ when no database connection is available; do not provision a replacement backend.
 - Movement writes require server-validated identity and database-side roles; UI guards and browser state are not authorization.
 - External Supabase auth uses the existing browser client, a client-only pathless route gate, and bearer middleware; every administrative server function independently validates identity and database role before privileged work.
-- User names live in profiles and permissions in user_roles; profile creation never grants access, and only an authenticated administrator assigns roles through the database function.
+- User names live in profiles and permissions in user_roles; verify the existing signup trigger's worker role before attempting assignment because account creation is not proof of authorization.
+- Purchasing uses reviewed ts_compras RPCs and real inventory IDs; never fall back to local example orders because receipt must be atomic and durable.
+- Product writes use ts_guardar_producto; initial stock is an internal registrar_movimiento call in the same transaction and edits omit quantity to preserve stock invariants.
+- Keep receipt retry keys and immutable payloads in sessionStorage until confirmation; this stores no authorization and prevents an uncertain network response from duplicating a receipt.
+- Stock classification and Colombian calendar grouping live in shared data/analysis helpers so dashboard and analysis cannot disagree.
