@@ -29,6 +29,9 @@ describe("Permisos de TecnoStock", () => {
   it("valida roles enviados al servidor", () => {
     expect(cambioRol.safeParse({ userId: "a51c85e1-69fc-42ab-a0cb-186fe3bda1e1", rol: "superusuario" }).success).toBe(false);
   });
+  it("ninguna función expuesta admite promover a administrador", () => {
+    expect(cambioRol.safeParse({ userId: "a51c85e1-69fc-42ab-a0cb-186fe3bda1e1", rol: "administrador" }).success).toBe(false);
+  });
 });
 import { rolABase as aBase, rolDesdeBase as desdeBase } from "./auth-rules";
 import { describe as d2, expect as e2, it as i2 } from "vitest";

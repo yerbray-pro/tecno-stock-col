@@ -1,9 +1,12 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { AppShell, Etiqueta, Panel, BotonPrimario, tonoEstado } from "@/components/AppShell";
+import { AppShell, Etiqueta, Panel, BotonPrimario, BotonSuave, tonoEstado } from "@/components/AppShell";
+import { useState } from "react";
+import { useAuth } from "@/lib/auth";
+import { useCompras } from "@/lib/compras";
 import { GraficoBarras, LeyendaGrafico } from "@/components/GraficoBarras";
-import { clavesDeMeses, recomendaciones, serieMensual } from "@/lib/analisis";
+import { clavesDeMeses, fechaColombia, recomendaciones, serieMensual } from "@/lib/analisis";
 import { estadoDeProducto, eventosComerciales } from "@/lib/data";
-import { numero, pesos } from "@/lib/format";
+import { numero, pesos, fechaCorta } from "@/lib/format";
 import { useInventarioReal } from "@/lib/movimientos-supabase";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -36,27 +39,31 @@ const FONDO_EVENTO: Record<string, string> = {
 };
 
 function Dashboard() {
+  const auth = useAuth();
+  const compras = useCompras(auth.rol === "administrador");
+  const [categoria, setCategoria] = useState("Todas");
   const { estado: carga, recargar } = useInventarioReal();
-  const productos = carga.tipo === "listo" ? carga.productos : [];
-  const movimientos = carga.tipo === "listo" ? carga.movimientos : [];
+  const todos = carga.tipo === "listo" ? carga.productos : [];
+  const productos = todos.filter(p => categoria === "Todas" || p.categoria === categoria);
+  const movimientos = carga.tipo === "listo" ? carga.movimientos.filter(m => productos.some(p => p.id === m.productoId)) : [];
   const meses = clavesDeMeses(6);
   const serie = serieMensual(movimientos, meses);
 
   const unidades = productos.reduce((s, p) => s + p.stock, 0);
-  const bajos = productos.filter((p) => estadoDeProducto(p) !== "Disponible");
+  const bajos = productos.filter((p) => estadoDeProducto(p) === "Stock bajo");
 
   const rotacion = productos
     .map((p) => ({
       producto: p,
       salidas: movimientos
       .filter(
-        (m) => m.productoId === p.id && m.tipo === "salida" && m.fecha.startsWith(meses[5] ?? ""),
+        (m) => m.productoId === p.id && m.tipo === "salida" && fechaColombia(m.fechaHora || m.fecha).startsWith(meses[5] ?? ""),
       )
         .reduce((s, m) => s + m.cantidad, 0),
     }))
     .sort((a, b) => b.salidas - a.salidas);
 
-  const recos = recomendaciones(productos, movimientos).slice(0, 3);
+  const recos = recomendaciones(productos, movimientos).filter(r => r.pronostico.sugerido > 0).slice(0, 3);
 
   return (
     <AppShell
@@ -73,8 +80,11 @@ function Dashboard() {
       }
     >
       {carga.tipo === "error" && (
-        <Panel className="p-4"><p role="alert" className="text-sm text-rose">{carga.mensaje}</p><button className="mt-2 text-xs font-medium text-brand hover:underline" onClick={() => void recargar()}>Reintentar</button></Panel>
+        <Panel className="p-4"><p role="alert" className="text-sm text-rose">{carga.mensaje}</p><BotonSuave onClick={() => void recargar()}>Reintentar</BotonSuave></Panel>
       )}
+      <label className="block max-w-sm text-xs text-ink-soft">Categoría<select className="campo mt-1" value={categoria} onChange={e => setCategoria(e.target.value)}><option>Todas</option>{Array.from(new Set(todos.map(p => p.categoria))).map(c => <option key={c}>{c}</option>)}</select></label>
+      {carga.tipo === "cargando" && <p role="status">Cargando datos reales…</p>}
+      {carga.tipo === "listo" && productos.length === 0 && <p className="text-sm text-ink-faint">Sin productos para esta selección.</p>}
       <section className="rise grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Kpi
           titulo="Productos registrados"
@@ -96,11 +106,19 @@ function Dashboard() {
           alerta
         />
         <Kpi
+          titulo="Productos agotados"
+          valor={String(productos.filter(p => p.stock === 0).length)}
+          pie="Reposición urgente" icono="!" alerta
+        />
+        <Kpi
           titulo="Mayor rotación"
-          valor={rotacion[0]?.producto.nombre.split(" ")[0] ?? "—"}
+          valor={rotacion[0]?.salidas ? rotacion[0].producto.nombre : "—"}
           pie={`${rotacion[0]?.salidas ?? 0} u. en el mes`}
           icono="∿"
         />
+        <Kpi titulo="Entradas este mes" valor={numero(serie[5]?.entradas ?? 0)} pie="Unidades registradas" icono="＋" />
+        <Kpi titulo="Salidas este mes" valor={numero(serie[5]?.salidas ?? 0)} pie="Unidades registradas" icono="−" />
+        {compras.data && <Kpi titulo="Órdenes pendientes / recibidas" valor={`${compras.data.ordenes.filter(o => ["Pendiente","Enviada","Parcialmente recibida"].includes(o.estado)).length} / ${compras.data.ordenes.filter(o => o.estado === "Recibida").length}`} pie="Órdenes persistidas" icono="▣" />}
       </section>
 
       <section className="grid gap-4 xl:grid-cols-3">
@@ -123,7 +141,7 @@ function Dashboard() {
           <h2 className="font-display text-base font-semibold tracking-tight">Próximos eventos</h2>
           <p className="text-xs text-ink-faint">Influyen en la demanda</p>
           <ul className="mt-4 space-y-3">
-            {eventosComerciales.slice(0, 3).map((e) => (
+            {eventosComerciales.filter(e => e.fecha >= fechaColombia(new Date().toISOString())).slice(0, 3).map((e) => (
               <li key={e.id} className="flex items-start gap-3">
                 <div
                   className={`grid size-11 shrink-0 place-items-center rounded-[10px] text-center leading-none ${FONDO_EVENTO[e.tono]}`}
@@ -150,6 +168,7 @@ function Dashboard() {
             <Etiqueta tono="amber">{recos.length}</Etiqueta>
           </div>
           <ul className="mt-4 space-y-3">
+            {recos.length === 0 && <li className="text-xs text-ink-faint">No hay necesidades de reposición identificadas.</li>}
             {recos.map((r) => (
               <li key={r.producto.id} className="rounded-[10px] border border-line p-3">
                 <div className="flex items-start justify-between gap-2">
@@ -234,6 +253,10 @@ function Dashboard() {
             </table>
           </div>
         </Panel>
+      </section>
+      <section className="grid gap-4 lg:grid-cols-2">
+        <Panel className="p-5"><h2 className="font-display font-semibold">Últimos movimientos</h2><ul className="mt-3 divide-y divide-line">{movimientos.slice(0,8).map(m => <li key={m.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span>{productos.find(p => p.id === m.productoId)?.nombre ?? `Producto #${m.productoId}`}</span><Etiqueta tono={m.tipo === "entrada" ? "teal" : "rose"}>{m.tipo === "entrada" ? "Entrada" : "Salida"} · {m.cantidad} u.</Etiqueta></div><p className="mt-1 text-xs text-ink-faint">{m.usuario} · {fechaCorta(fechaColombia(m.fechaHora || m.fecha))}</p></li>)}</ul>{movimientos.length === 0 && <p className="mt-3 text-xs text-ink-faint">Sin movimientos registrados.</p>}<Link to="/movimientos" className="mt-3 inline-block text-xs text-brand">Ver historial →</Link></Panel>
+        <Panel className="p-5"><h2 className="font-display font-semibold">Productos con mayor rotación</h2><ul className="mt-3 divide-y divide-line">{rotacion.filter(r => r.salidas > 0).slice(0,5).map(r => <li key={r.producto.id} className="flex justify-between gap-3 py-3 text-sm"><span>{r.producto.nombre}</span><span>{r.salidas} u.</span></li>)}</ul>{!rotacion.some(r => r.salidas > 0) && <p className="mt-3 text-xs text-ink-faint">Sin salidas este mes.</p>}{auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: "" }} className="mt-3 inline-block text-xs text-brand">Consultar órdenes de compra →</Link>}</Panel>
       </section>
     </AppShell>
   );
