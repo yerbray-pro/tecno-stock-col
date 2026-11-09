@@ -1,11 +1,14 @@
 # TecnoStock: entrega y seguridad
 
 ## Prioridades del 9 de noviembre
-- [ ] Corregir creación de trabajadores y restringir administración de proveedores/productos.
-- [ ] Unificar clasificación de stock y recomendaciones sin historial.
-- [ ] Preparar proveedores, catálogo, órdenes y recepción atómica con SQL manual revisable.
-- [ ] Mejorar Dashboard con datos compartidos reales.
-- [ ] Ejecutar pruebas automáticas y entregar checklist QA con limitaciones reales.
+- [x] Corregir verificación del trigger y restringir promociones expuestas, menú y URL de compras; SQL de permisos propuesto.
+- [x] Unificar clasificación de stock y recomendaciones sin historial; reproducir cinco fallas y confirmar correcciones.
+- [x] Preparar proveedores, catálogo, órdenes y recepción atómica con SQL manual revisable, sin datos demo activos.
+- [x] Mejorar Dashboard con datos compartidos reales, categorías y últimos movimientos.
+- [x] Ejecutar 57 pruebas automáticas, revisar compilación correcta y entregar docs/ENTREGA_QA.md.
+- [ ] Revisar/instalar SQL compras/productos/roles y probar admin/trabajador reales. Bloqueado: sin conexión externa, credenciales o esquema inspeccionable aquí; necesita revisión manual del propietario.
+- [ ] Confirmar atomicidad/idempotencia/concurrencia y Realtime reales. Bloqueado: SQL aprobado instalado y sesiones reales.
+- [ ] Investigar avisos recuperables del router al abrir URLs privadas sin sesión. Bloqueado: error interno MatchView routeId en entorno de preview; /auth independiente funciona, reportado a plataforma.
 
 ## Autenticación y usuarios
 - [x] Incorporar acceso privado, correo/contraseña, nombre y cierre de sesión.

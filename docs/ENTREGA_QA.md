@@ -31,7 +31,7 @@
 Estas pruebas **no prueban transacciones, RLS, triggers ni cuentas reales**. Compilación automática se revisa aparte; no equivale a QA con Supabase.
 
 ## Evidencia de navegador
-Sin sesión: /usuarios, /proveedores, /inventario, /analisis y / terminan en /auth. Ingreso visible desktop 1280×1800 y móvil 390×844 sin desbordamiento. No verifica un trabajador autenticado. En una corrida inicial de múltiples navegaciones hubo avisos recuperables de hidratación; visita independiente posterior a /auth no los reprodujo. No se declaró corregido ese aviso.
+Sin sesión: /usuarios, /proveedores, /inventario, /analisis y / terminan en /auth. Ingreso visible desktop 1280×1800 y móvil 390×844 sin desbordamiento. No verifica un trabajador autenticado. Las visitas directas a páginas privadas sin sesión reproducen avisos recuperables del router: `MatchView: Cannot read properties of undefined (reading routeId)`. La redirección termina correctamente. Visita independiente a /auth sin errores. Incidencia de preview reportada a la plataforma; no se declaró corregida y sigue pendiente.
 No hay conexión externa disponible, sesión autorizada ni variables servidor en este entorno. Las variables de Vercel no se comparten aquí. Inicio de sesión/configuración Auth alojada y flujos privados reales quedan **no verificados**.
 
 ## Checklist obligatorio (formato de incidencia)
@@ -53,7 +53,7 @@ No hay conexión externa disponible, sesión autorizada ni variables servidor en
 | 14. Historial conservado | Exportar/contar historial antes y después de pruebas reales | Filas originales intactas | No se ejecutaron writes; conservación remota no auditada | Alta | comparativa manual pendiente |
 
 ### Compilación y errores
-Verificar último registro automático de compilación. Los errores detectados durante el trabajo (narrowing de estado, acceso de índice y optional props) fueron corregidos; consultar el resultado final informado en chat. No se ejecutaron builds manuales.
+Último registro automático revisado: **build OK, 9 noviembre 22:13:55 UTC**. Los errores detectados durante el trabajo (narrowing de estado, acceso de índice y optional props) fueron corregidos. No se ejecutaron builds manuales. Esto no certifica SQL ni las operaciones reales.
 
 ### Pendientes bloqueados
 Inspección remota, revisión/aprobación/instalación SQL, pruebas reales admin/worker, atomicidad/concurrencia, Auth público desactivado y Realtime. No habilitar publicación de este avance antes de resolver las dependencias de compras y guardado de productos.
