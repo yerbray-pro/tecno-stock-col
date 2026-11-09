@@ -1,9 +1,10 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell, Etiqueta, Panel } from "@/components/AppShell";
 import { GraficoBarras, LeyendaGrafico, MiniLinea } from "@/components/GraficoBarras";
 import { clavesDeMeses, pronosticar, recomendaciones, serieMensual } from "@/lib/analisis";
-import { eventosComerciales } from "@/lib/data";
+import { estadoDeProducto, eventosComerciales } from "@/lib/data";
+import { useAuth } from "@/lib/auth";
 import { etiquetaMes, numero } from "@/lib/format";
 import { useInventarioReal } from "@/lib/movimientos-supabase";
 
@@ -39,12 +40,25 @@ function Analisis() {
   const meses = clavesDeMeses(6);
   const serie = serieMensual(movimientos, meses);
   const recos = recomendaciones(productos, movimientos, factor);
+  const auth = useAuth();
+  const necesidades = recos.filter(r => r.pronostico.sugerido > 0);
 
   return (
     <AppShell
       titulo="Análisis y recomendaciones"
       subtitulo={`Historial de ${etiquetaMes(meses[0] ?? "")} a ${etiquetaMes(meses[5] ?? "")}`}
     >
+      {carga.tipo !== "listo" && <p role={carga.tipo === "error" ? "alert" : "status"} className="text-sm text-ink-soft">{carga.tipo === "error" ? carga.mensaje : "Cargando datos reales…"}</p>}
+      {carga.tipo === "listo" && productos.length === 0 && <p className="text-sm text-ink-soft">Todavía no hay productos registrados.</p>}
+      <section className="space-y-3">
+        <h2 className="font-display text-base font-semibold">Productos que necesitan reposición</h2>
+        <ul className="grid gap-3 lg:grid-cols-2">{necesidades.map(r => <li key={r.producto.id} className="rounded-lg border border-line p-3">
+          <div className="flex flex-wrap justify-between gap-2"><span className="font-medium">{r.producto.nombre}</span><Etiqueta tono={r.prioridad === "Urgente" ? "rose" : "amber"}>{r.prioridad}</Etiqueta></div>
+          <p className="mt-2 text-xs text-ink-soft">{r.mensaje}</p>
+          {auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: r.producto.id }} className="mt-2 inline-block text-xs text-brand">Crear solicitud de compra →</Link>}
+        </li>)}</ul>
+        {carga.tipo === "listo" && necesidades.length === 0 && <p className="text-sm text-ink-faint">No hay necesidades de reposición identificadas.</p>}
+      </section>
       <Panel className="p-5">
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto] sm:items-end">
           <div>
@@ -52,7 +66,7 @@ function Analisis() {
               Evento comercial a considerar
             </h2>
             <p className="text-xs text-ink-faint">
-              El pronóstico del próximo periodo se ajusta con el evento seleccionado.
+              Estimación estadística, no IA generativa. Los ajustes de eventos son escenarios manuales, no demanda observada.
             </p>
           </div>
           <select
@@ -125,6 +139,8 @@ function Analisis() {
             <thead>
               <tr className="border-b border-line text-[11px] uppercase tracking-wide text-ink-faint">
                 <th className="px-5 py-2.5 font-medium">Producto</th>
+                <th className="px-3 py-2.5 text-right font-medium">Stock / mínimo</th>
+                <th className="px-3 py-2.5 font-medium">Estado</th>
                 <th className="px-3 py-2.5 font-medium">Historial</th>
                 <th className="px-3 py-2.5 text-right font-medium">Mes anterior</th>
                 <th className="px-3 py-2.5 text-right font-medium">Último mes</th>
@@ -140,18 +156,23 @@ function Analisis() {
                   return (
                     <tr key={p.id} className="hover:bg-canvas/60">
                       <td className="px-5 py-3 font-medium">{p.nombre}</td>
+                      <td className="px-3 py-3 text-right">{p.stock} / {p.stockMinimo}</td>
+                      <td className="px-3 py-3"><Etiqueta tono={p.stock === 0 ? "rose" : p.stock <= p.stockMinimo ? "amber" : "teal"}>{estadoDeProducto(p)}</Etiqueta></td>
                       <td className="px-3 py-3">
                         <MiniLinea valores={f.salidasPorMes} />
                       </td>
-                      <td colSpan={5} className="px-5 py-3 text-xs text-ink-faint">
-                        Producto nuevo: no hay suficientes datos para realizar un pronóstico.
+                      <td colSpan={4} className="px-5 py-3 text-xs text-ink-faint">
+                        Historial insuficiente: pronóstico todavía no confiable.
                       </td>
+                      <td className="px-5 py-3 text-right font-mono">{f.sugerido} u.</td>
                     </tr>
                   );
                 }
                 return (
                   <tr key={p.id} className="hover:bg-canvas/60">
                     <td className="px-5 py-3 font-medium">{p.nombre}</td>
+                    <td className="px-3 py-3 text-right">{p.stock} / {p.stockMinimo}</td>
+                    <td className="px-3 py-3"><Etiqueta tono={p.stock === 0 ? "rose" : p.stock <= p.stockMinimo ? "amber" : "teal"}>{estadoDeProducto(p)}</Etiqueta></td>
                     <td className="px-3 py-3">
                       <MiniLinea valores={f.salidasPorMes} />
                     </td>

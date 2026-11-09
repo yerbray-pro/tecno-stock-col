@@ -25,6 +25,7 @@ export function filaAProducto(f: Fila): Producto {
     nombre: texto(leer(f, "nombre", "name"), "Sin nombre"),
     categoria: texto(leer(f, "categoria", "category"), "Sin categoría"),
     marca: texto(leer(f, "marca", "brand"), "—"),
+    modelo: texto(leer(f, "modelo")),
     stock: num(leer(f, "stock", "stock_actual", "stockActual", "cantidad")),
     stockMinimo: num(leer(f, "stock_minimo", "stockMinimo", "stock_min")),
     precioCompra: num(leer(f, "precio_compra", "precioCompra", "precio")),
@@ -44,6 +45,7 @@ const COLUMNAS: Record<keyof NuevoProducto, string[]> = {
   nombre: ["nombre", "name"],
   categoria: ["categoria", "category"],
   marca: ["marca", "brand"],
+  modelo: ["modelo"],
   stock: ["stock", "stock_actual", "stockActual", "cantidad"],
   stockMinimo: ["stock_minimo", "stockMinimo", "stock_min"],
   precioCompra: ["precio_compra", "precioCompra", "precio"],
@@ -86,15 +88,20 @@ export async function crearProducto(p: NuevoProducto): Promise<{ ok: true } | { 
   const invalido = validarProducto(p);
   if (invalido) return { ok: false, error: invalido };
   if (!supabase) return { ok: false, error: "La conexión con la base de datos no está configurada." };
-  const { error } = await supabase.from("productos").insert({
-    nombre: p.nombre.trim(), categoria: p.categoria.trim(), marca: p.marca.trim(),
-    cantidad: p.stock, stock_minimo: p.stockMinimo, precio_compra: p.precioCompra,
-  });
+  const { error } = await supabase.rpc("ts_guardar_producto", { p_datos: { nombre: p.nombre.trim(), categoria: p.categoria.trim(), marca: p.marca.trim(), modelo: p.modelo ?? "", stock_inicial: p.stock, stock_minimo: p.stockMinimo, precio_compra: p.precioCompra } });
   if (error) {
+    if (error.code === "PGRST202") return { ok: false, error: "La creación segura requiere instalar el SQL revisado ts_guardar_producto. No se ha creado el producto." };
     if (error.code === "42501") return { ok: false, error: "No tienes permiso para crear productos. Solo un administrador puede hacerlo." };
     return { ok: false, error: `No se pudo guardar el producto: ${error.message}` };
   }
   return { ok: true };
+}
+
+export async function editarProducto(p: Producto): Promise<{ ok: true } | { ok: false; error: string }> {
+  const invalido = validarProducto(p); if (invalido) return { ok: false, error: invalido };
+  if (!supabase) return { ok: false, error: "La conexión no está configurada." };
+  const { error } = await supabase.rpc("ts_guardar_producto", { p_datos: { id: p.id, nombre: p.nombre.trim(), categoria: p.categoria.trim(), marca: p.marca.trim(), modelo: p.modelo ?? "", stock_minimo: p.stockMinimo, precio_compra: p.precioCompra } });
+  return error ? { ok: false, error: "No se pudo editar. Verifica permisos e instalación del SQL revisado; el stock no se modifica desde aquí." } : { ok: true };
 }
 
 export function useProductosSupabase() {
@@ -126,20 +133,11 @@ export function useProductosSupabase() {
       const invalido = validarProducto(p);
       if (invalido) return { ok: false, error: invalido };
       if (!supabase) return { ok: false, error: "La conexión con la base de datos no está configurada." };
-      const { data, error } = await supabase
-        .from("productos")
-        .insert(construirFila(p, ejemplo))
-        .select("*")
-        .single();
-      if (error) return { ok: false, error: `No se pudo guardar el producto: ${error.message}` };
-      const nuevo = filaAProducto(data as Fila);
-      if (!ejemplo) setEjemplo(data as Fila);
-      setEstado((prev) =>
-        prev.tipo === "listo" ? { tipo: "listo", productos: [...prev.productos, nuevo] } : prev,
-      );
-      return { ok: true };
+      const resultado = await crearProducto(p);
+      if (resultado.ok) await cargar();
+      return resultado;
     },
-    [ejemplo],
+    [cargar],
   );
 
   useEffect(() => {
