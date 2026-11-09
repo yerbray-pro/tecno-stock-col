@@ -1,4 +1,11 @@
-# Movimientos reales
+# TecnoStock: entrega y seguridad
+
+## Prioridades del 9 de noviembre
+- [ ] Corregir creación de trabajadores y restringir administración de proveedores/productos.
+- [ ] Unificar clasificación de stock y recomendaciones sin historial.
+- [ ] Preparar proveedores, catálogo, órdenes y recepción atómica con SQL manual revisable.
+- [ ] Mejorar Dashboard con datos compartidos reales.
+- [ ] Ejecutar pruebas automáticas y entregar checklist QA con limitaciones reales.
 
 ## Autenticación y usuarios
 - [x] Incorporar acceso privado, correo/contraseña, nombre y cierre de sesión.
