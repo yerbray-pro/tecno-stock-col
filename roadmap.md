@@ -1,5 +1,11 @@
 # TecnoStock: entrega y seguridad
 
+## Revisión prioritaria: datos compartidos, reposición y trabajadores
+- [ ] Comprobar que Dashboard, Inventario, Análisis y Proveedores usan la misma consulta y se actualizan con movimientos y Realtime.
+- [ ] Confirmar reposición para cantidad <= stock_minimo y el caso Prueba TecnoStock 001 (1/2), con pruebas automáticas y revisión visible.
+- [ ] Confirmar el rol user real antes de informar éxito al crear trabajadores, sin reintentos que dupliquen cuentas ni cambios al administrador principal.
+- [ ] Separar verificación local de comprobaciones pendientes en Supabase y de SQL aún no instalado.
+
 ## Prioridades del 9 de noviembre
 - [x] Corregir verificación del trigger y restringir promociones expuestas, menú y URL de compras; SQL de permisos propuesto.
 - [x] Unificar clasificación de stock y recomendaciones sin historial; reproducir cinco fallas y confirmar correcciones.
