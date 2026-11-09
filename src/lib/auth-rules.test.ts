@@ -30,3 +30,11 @@ describe("Permisos de TecnoStock", () => {
     expect(cambioRol.safeParse({ userId: "a51c85e1-69fc-42ab-a0cb-186fe3bda1e1", rol: "superusuario" }).success).toBe(false);
   });
 });
+import { rolABase as aBase, rolDesdeBase as desdeBase } from "./auth-rules";
+import { describe as d2, expect as e2, it as i2 } from "vitest";
+d2("roles de la base", () => {
+  i2("admin es administrador", () => e2(desdeBase("admin")).toBe("administrador"));
+  i2("user es trabajador", () => e2(desdeBase("user")).toBe("trabajador"));
+  i2("rol desconocido no da acceso", () => e2(desdeBase("root")).toBeNull());
+  i2("trabajador se guarda como user", () => e2(aBase("trabajador")).toBe("user"));
+});
