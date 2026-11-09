@@ -29,7 +29,7 @@ export const Route = createFileRoute("/_authenticated/analisis")({
 });
 
 function Analisis() {
-  const { estado: carga, recargar } = useInventarioReal();
+  const { estado: carga } = useInventarioReal();
   const productos = carga.tipo === "listo" ? carga.productos : [];
   const movimientos = carga.tipo === "listo" ? carga.movimientos : [];
   const [eventoId, setEventoId] = useState("ninguno");
