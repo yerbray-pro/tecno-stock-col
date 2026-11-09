@@ -15,7 +15,7 @@
 - [x] Ejecutar 57 pruebas automáticas, revisar compilación correcta y entregar docs/ENTREGA_QA.md.
 - [ ] Revisar/instalar SQL compras/productos/roles y probar admin/trabajador reales. Bloqueado: sin conexión externa, credenciales o esquema inspeccionable aquí; necesita revisión manual del propietario.
 - [ ] Confirmar atomicidad/idempotencia/concurrencia y Realtime reales. Bloqueado: SQL aprobado instalado y sesiones reales.
-- [ ] Investigar avisos recuperables del router al abrir URLs privadas sin sesión. Bloqueado: error interno MatchView routeId en entorno de preview; /auth independiente funciona, reportado a plataforma.
+- [x] Comprobar las seis URLs privadas sin sesión: todas redirigen a /auth sin errores de página en la revisión actual; trabajador autenticado sigue pendiente de prueba real.
 
 ## Autenticación y usuarios
 - [x] Incorporar acceso privado, correo/contraseña, nombre y cierre de sesión.
