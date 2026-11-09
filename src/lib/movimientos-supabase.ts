@@ -68,6 +68,9 @@ export function filaAMovimiento(fila: Record<string, unknown>): Movimiento {
     usuario: String(fila["usuario_responsable"] ?? "—"),
     usuarioId: typeof fila["usuario_id"] === "string" ? fila["usuario_id"] : null,
     nota: [fila["motivo"], fila["observacion"]].filter(Boolean).join(" · "),
+    motivo: typeof fila["motivo"] === "string" ? fila["motivo"] : "",
+    observacion: typeof fila["observacion"] === "string" ? fila["observacion"] : "",
+    fechaHora: String(fila["fecha"] ?? ""),
   };
 }
 

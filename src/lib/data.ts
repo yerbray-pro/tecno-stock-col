@@ -20,6 +20,10 @@ export type Movimiento = {
   usuario: string;
   usuarioId?: string | null;
   nota?: string;
+  motivo?: string;
+  observacion?: string;
+  /** Fecha y hora completa (ISO) para ordenar y filtrar. */
+  fechaHora?: string;
 };
 
 export type PrecioProveedor = { productoId: string; precio: number };
