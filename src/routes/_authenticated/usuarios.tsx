@@ -1,13 +1,19 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 import { useServerFn } from "@tanstack/react-start";
 import { useQuery } from "@tanstack/react-query";
 import { useState } from "react";
 import { AppShell, Panel, BotonPrimario, BotonSuave, Etiqueta } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
 import { crearTrabajador, listarUsuarios, asignarRol } from "@/lib/users.functions";
-import { cuentaTrabajador, puedeGestionar, type Rol } from "@/lib/auth-rules";
+import { cuentaTrabajador, puedeGestionar } from "@/lib/auth-rules";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
+  // El layout privado comprueba la sesión y proporciona context.access.
+  beforeLoad: ({ context }) => {
+    if (context.access?.rol !== "administrador") {
+      throw redirect({ to: "/", replace: true });
+    }
+  },
   head: () => ({ meta: [
     { title: "Administración de usuarios — TecnoStock" },
     { name: "description", content: "Administración privada de cuentas y roles del equipo de TecnoStock." },
@@ -26,7 +32,6 @@ function Usuarios() {
   const [form, setForm] = useState({ nombre: "", correo: "", password: "" });
   const [busy, setBusy] = useState(false);
   const [mensaje, setMensaje] = useState<{ ok: boolean; text: string } | null>(null);
-  const [roles, setRoles] = useState<Record<string, Rol>>({});
   if (auth.rol !== "administrador") return <AppShell titulo="Usuarios" subtitulo="Administración"><p role="alert" className="text-sm text-rose">Solo el administrador puede gestionar usuarios.</p></AppShell>;
   return <AppShell titulo="Usuarios" subtitulo="Administración del equipo">
     <section className="max-w-3xl space-y-4">
@@ -49,21 +54,44 @@ function Usuarios() {
     </section>
     <Panel className="overflow-x-auto">
       <table className="w-full text-left text-sm"><thead><tr className="border-b border-line text-ink-faint"><th className="px-5 py-3">Nombre</th><th className="px-5 py-3">Correo</th><th className="px-5 py-3">Rol</th><th className="px-5 py-3">Acción</th></tr></thead>
-      <tbody className="divide-y divide-line">{query.data?.map(u => {
-        const editable = puedeGestionar(auth.rol, auth.user?.id ?? "", u.id, u.principal);
-        return <tr key={u.id}><td className="px-5 py-3">{u.nombre || "—"}</td><td className="px-5 py-3">{u.correo}</td><td className="px-5 py-3">
-          {editable ? <select aria-label={`Rol de ${u.nombre || u.correo}`} className="campo min-w-40" disabled={busy} value={roles[u.id] ?? u.rol ?? ""} onChange={e => setRoles({ ...roles, [u.id]: e.target.value as Rol })}>
-            {!u.rol && <option value="" disabled>Sin acceso</option>}<option value="trabajador">Trabajador</option><option value="administrador">Administrador</option>
-          </select> : <Etiqueta tono="brand">{u.principal ? "Administrador principal" : u.rol === "administrador" ? "Administrador" : "Trabajador"}</Etiqueta>}
-        </td><td className="px-5 py-3">{editable && <BotonSuave disabled={busy || !roles[u.id] || roles[u.id] === u.rol} onClick={async () => {
-          const rol = roles[u.id]; if (!rol || busy) return;
-          if (rol === "administrador" && !window.confirm(`¿Conceder administración de cuentas y roles a ${u.nombre || u.correo}?`)) return;
-          setBusy(true); setMensaje(null);
-          try { await assign({ data: { userId: u.id, rol } }); setMensaje({ ok: true, text: "Rol actualizado." }); await query.refetch(); }
-          catch (e) { setMensaje({ ok: false, text: e instanceof Error ? e.message : "No se pudo cambiar el rol." }); }
-          finally { setBusy(false); }
-        }}>Guardar rol</BotonSuave>}</td></tr>;
-      })}</tbody></table>
+      <tbody className="divide-y divide-line">
+        {query.data?.map((u) => {
+          const editable = puedeGestionar(auth.rol, auth.user?.id ?? "", u.id, u.principal);
+          const etiqueta = u.principal
+            ? "Administrador principal"
+            : u.rol === "administrador"
+              ? "Administrador"
+              : u.rol === "trabajador"
+                ? "Trabajador"
+                : "Sin acceso";
+
+          return (
+            <tr key={u.id}>
+              <td className="px-5 py-3">{u.nombre || "—"}</td>
+              <td className="px-5 py-3">{u.correo}</td>
+              <td className="px-5 py-3"><Etiqueta tono="brand">{etiqueta}</Etiqueta></td>
+              <td className="px-5 py-3">
+                {editable && !u.rol && (
+                  <BotonSuave disabled={busy} onClick={async () => {
+                    if (busy) return;
+                    setBusy(true);
+                    setMensaje(null);
+                    try {
+                      await assign({ data: { userId: u.id, rol: "trabajador" } });
+                      setMensaje({ ok: true, text: "Cuenta habilitada como trabajador." });
+                      await query.refetch();
+                    } catch (e) {
+                      setMensaje({ ok: false, text: e instanceof Error ? e.message : "No se pudo habilitar la cuenta." });
+                    } finally {
+                      setBusy(false);
+                    }
+                  }}>Habilitar trabajador</BotonSuave>
+                )}
+              </td>
+            </tr>
+          );
+        })}
+      </tbody></table>
       {query.isPending && <p role="status" className="p-5 text-sm text-ink-soft">Cargando usuarios…</p>}
       {query.isError && <div className="space-y-2 p-5"><p role="alert" className="text-sm text-rose">{query.error.message}</p><BotonSuave onClick={() => void query.refetch()}>Reintentar</BotonSuave></div>}
       {query.data?.length === 0 && <p className="p-5 text-sm text-ink-soft">No hay cuentas disponibles.</p>}
