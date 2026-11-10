@@ -3,7 +3,7 @@ import { clienteAdministradorIA, snapshotIA } from "./acceso.server";
 import { createResponsesCall } from "./responses.server";
 import { validarExplicaciones } from "./contrato";
 
-export async function handleInventarioIA(request: Request, config: {url?:string;key?:string;aiKey?:string}) {
+export async function handleInventarioIA(request: Request, config: {url:string|undefined;key:string|undefined;aiKey:string|undefined}) {
   if (request.headers.get("origin") !== new URL(request.url).origin) return Response.json({message:"Origen no permitido."},{status:403});
   try {
     const client=await clienteAdministradorIA(config.url,config.key,request.headers.get("Authorization")??undefined);
@@ -14,6 +14,8 @@ export async function handleInventarioIA(request: Request, config: {url?:string;
     if(reservaError) return Response.json({message:reservaError.code==="PGRST202" ? "Falta instalar el control de uso de IA. No se realizó una llamada pagada." : reservaError.code==="22023" ? reservaError.message : "No se pudo autorizar el uso de IA. Revisa su configuración."},{status:429});
     const abort=new AbortController();
     request.signal.addEventListener("abort",()=>abort.abort(),{once:true});
+    if(request.signal.aborted) abort.abort();
+    let cancelado=false;
     let streamError: unknown;
     const call=createResponsesCall(new Request(request,{signal:abort.signal}),{baseURL:"https://ai.gateway.lovable.dev/v1",apiKey:config.aiKey,model:"openai/gpt-6-astra"},[
       {role:"user",content:JSON.stringify(snapshot.indicadores.map(({nombre,...i})=>i))},
@@ -21,7 +23,7 @@ export async function handleInventarioIA(request: Request, config: {url?:string;
     const encoder=new TextEncoder();
     const body=new ReadableStream<Uint8Array>({
       async start(controller) {
-        const enviar=(obj:unknown)=>controller.enqueue(encoder.encode(JSON.stringify(obj)+"\n"));
+        const enviar=(obj:unknown)=>{if(!cancelado) controller.enqueue(encoder.encode(JSON.stringify(obj)+"\n"));};
         enviar({tipo:"progreso",mensaje:"Calculando explicaciones con indicadores reales…"});
         try {
           for await (const part of call.result.fullStream) {
@@ -43,9 +45,9 @@ export async function handleInventarioIA(request: Request, config: {url?:string;
             if(status===402 || status===403) await client.rpc("ts_ia_control",{p_accion:"pausar",p_motivo:mensaje.slice(0,500)});
             enviar({tipo:status===403 ? "denegado":"error",status,mensaje});
           }
-        } finally { controller.close(); }
+        } finally { if(!cancelado) controller.close(); }
       },
-      cancel() { abort.abort(); },
+      cancel() { cancelado=true;abort.abort(); },
     });
     return new Response(body,{headers:{"Content-Type":"application/x-ndjson; charset=utf-8","Cache-Control":"no-store","X-Content-Type-Options":"nosniff"}});
   } catch(error) {

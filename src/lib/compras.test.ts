@@ -1,7 +1,8 @@
 import { describe, expect, it } from "vitest";
-import { nuevaOrden, recepcion, cantidadPendiente } from "./compras";
+import { nuevaOrden, recepcion, cantidadPendiente, filtrarOrdenes } from "./compras";
 const id = "a51c85e1-69fc-42ab-a0cb-186fe3bda1e1";
 describe("Reglas de compras", () => {
+  it("filtra pendientes sin incluir recibidas",()=>expect(filtrarOrdenes([{id,proveedor_id:id,estado:"Pendiente",created_at:"2026-11-10"},{id:"otra",proveedor_id:id,estado:"Recibida",created_at:"2026-11-10"}],"Pendiente").map(o=>o.id)).toEqual([id]));
   it("permite múltiples productos reales sin duplicados", () => expect(nuevaOrden.safeParse({ proveedor_id: id, items: [{ producto_id: "1", cantidad: 2, precio_unitario: 25000 }, { producto_id: "2", cantidad: 1, precio_unitario: 30000 }] }).success).toBe(true));
   it("rechaza repetir el mismo producto", () => expect(nuevaOrden.safeParse({ proveedor_id: id, items: Array(2).fill({ producto_id: "1", cantidad: 2, precio_unitario: 25000 }) }).success).toBe(false));
   it("no acepta una recepción sin clave idempotente", () => expect(recepcion.safeParse({ orden_id: id, items: [{ producto_id: "1", cantidad: 2 }] }).success).toBe(false));

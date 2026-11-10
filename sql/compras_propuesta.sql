@@ -79,7 +79,9 @@ BEGIN
  'proveedores',coalesce((SELECT jsonb_agg(to_jsonb(p) ORDER BY p.empresa) FROM public.ts_proveedores p),'[]'::jsonb),
  'catalogo',coalesce((SELECT jsonb_agg(to_jsonb(c)) FROM public.ts_catalogo c),'[]'::jsonb),
  'ordenes',coalesce((SELECT jsonb_agg(to_jsonb(o) ORDER BY o.created_at DESC) FROM public.ts_ordenes o),'[]'::jsonb),
- 'items',coalesce((SELECT jsonb_agg(to_jsonb(i)) FROM public.ts_orden_items i),'[]'::jsonb)); END IF;
+ 'items',coalesce((SELECT jsonb_agg(to_jsonb(i)) FROM public.ts_orden_items i),'[]'::jsonb),
+ 'recepciones',coalesce((SELECT jsonb_agg(to_jsonb(r) ORDER BY r.created_at DESC) FROM public.ts_recepciones r),'[]'::jsonb),
+ 'recepcion_items',coalesce((SELECT jsonb_agg(to_jsonb(i)) FROM public.ts_recepcion_items i),'[]'::jsonb)); END IF;
  IF p_accion='proveedor' THEN
   v_id:=nullif(p_datos->>'id','')::uuid;
   IF v_id IS NULL THEN INSERT INTO public.ts_proveedores(empresa,contacto,telefono,correo,observaciones,activo)
@@ -116,6 +118,13 @@ BEGIN
   -- No stock/movement write on creation.
   RETURN jsonb_build_object('id',v_id);
  END IF;
+ -- Lock receipt key BEFORE order row, always in the same order across requests.
+ -- Prevents a key/order lock inversion when two orders accidentally reuse a key.
+ IF p_accion='recibir' THEN
+  v_clave:=(p_datos->>'clave')::uuid;
+  IF v_clave IS NULL THEN RAISE EXCEPTION 'Falta referencia idempotente' USING ERRCODE='22023'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended(v_clave::text,0));
+ END IF;
  IF p_accion IN ('estado','recibir') THEN
   v_id:=(p_datos->>'orden_id')::uuid;
   SELECT * INTO v_orden FROM public.ts_ordenes WHERE id=v_id FOR UPDATE;
@@ -129,7 +138,6 @@ BEGIN
  IF p_accion='recibir' THEN
   v_clave:=(p_datos->>'clave')::uuid;
   IF v_clave IS NULL THEN RAISE EXCEPTION 'Falta referencia idempotente' USING ERRCODE='22023'; END IF;
-  PERFORM pg_advisory_xact_lock(hashtextextended(v_clave::text,0));
   SELECT * INTO v_anterior FROM public.ts_recepciones WHERE clave=v_clave;
   IF FOUND THEN
    IF v_anterior.orden_id<>v_id OR v_anterior.payload IS DISTINCT FROM p_datos OR v_anterior.usuario_id<>auth.uid() THEN RAISE EXCEPTION 'Referencia reutilizada con datos diferentes' USING ERRCODE='22023'; END IF;
@@ -162,5 +170,7 @@ GRANT EXECUTE ON FUNCTION public.ts_compras(text,jsonb) TO authenticated;
 -- SECURITY DEFINER owned by trusted migration owner; verify postgres ownership during manual review.
 ALTER FUNCTION public.ts_es_admin() OWNER TO postgres;
 ALTER FUNCTION public.ts_compras(text,jsonb) OWNER TO postgres;
+-- Remove implicit/default browser writes too; SELECT alone is granted deliberately.
+REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON public.ts_proveedores,public.ts_catalogo,public.ts_ordenes,public.ts_orden_items,public.ts_recepciones,public.ts_recepcion_items FROM PUBLIC,anon,authenticated;
 COMMIT;
 -- Realtime publication changes are intentionally separate and require review.

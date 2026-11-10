@@ -3,7 +3,7 @@ import { useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell, BotonPrimario, BotonSuave, Etiqueta, Panel } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
-import { CLAVE_COMPRAS, useCompras, operarCompras, nuevaOrden, recepcion, cantidadPendiente, type ProveedorReal, type OrdenReal, type ItemReal } from "@/lib/compras";
+import { CLAVE_COMPRAS, useCompras, operarCompras, nuevaOrden, recepcion, cantidadPendiente, filtrarOrdenes, type ProveedorReal, type OrdenReal, type ItemReal } from "@/lib/compras";
 import { CLAVE_INVENTARIO, useInventarioReal } from "@/lib/movimientos-supabase";
 import { fechaCorta, pesos } from "@/lib/format";
 
@@ -21,6 +21,7 @@ function Proveedores() {
   const [proveedor, setProveedor] = useState<Omit<ProveedorReal, "id"> & { id?: string }>(vacio);
   const [cotizacion, setCotizacion] = useState({ proveedor_id: "", producto_id: producto, precio: "" });
   const [comparar, setComparar] = useState(producto);
+  const [estadoOrden,setEstadoOrden]=useState("Todas");
   const [proveedorOrden, setProveedorOrden] = useState("");
   const [lineas, setLineas] = useState([{ producto_id: producto, cantidad: "1", precio_unitario: "" }]);
   const [busy, setBusy] = useState(false); const [mensaje, setMensaje] = useState<{ ok: boolean; text: string } | null>(null);
@@ -80,7 +81,8 @@ function Proveedores() {
           <div className="flex flex-wrap items-center gap-3"><BotonSuave type="button" onClick={() => setLineas([...lineas, { producto_id: "", cantidad: "1", precio_unitario: "" }])}>＋ Producto</BotonSuave><span className="text-sm">Total: {pesos(lineas.reduce((s,l) => s + Number(l.cantidad)*Number(l.precio_unitario),0))}</span><BotonPrimario disabled={busy} type="submit">Crear orden pendiente</BotonPrimario></div>
         </form>
       </section>
-      <section className="space-y-3"><h2 className="font-display font-semibold">Órdenes de compra</h2>{data.ordenes.length === 0 && <p className="text-sm text-ink-faint">Sin órdenes guardadas.</p>}{data.ordenes.map(o => <Orden key={o.id} orden={o} items={data.items.filter(i => i.orden_id === o.id)} empresa={proveedores.find(p => p.id === o.proveedor_id)?.empresa ?? ""} nombre={nombre} busy={busy} ejecutar={ejecutar}/>)}</section>
+      <section className="space-y-3"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-display font-semibold">Órdenes de compra</h2><select aria-label="Estado de órdenes" className="campo sm:max-w-64" value={estadoOrden} onChange={e=>setEstadoOrden(e.target.value)}>{["Todas","Pendiente","Enviada","Parcialmente recibida","Recibida","Cancelada"].map(e=><option key={e}>{e}</option>)}</select></div>{filtrarOrdenes(data.ordenes,estadoOrden).length === 0 && <p className="text-sm text-ink-faint">Sin órdenes para esta selección.</p>}{filtrarOrdenes(data.ordenes,estadoOrden).map(o => <Orden key={o.id} orden={o} items={data.items.filter(i => i.orden_id === o.id)} empresa={proveedores.find(p => p.id === o.proveedor_id)?.empresa ?? ""} nombre={nombre} busy={busy} ejecutar={ejecutar}/>)}</section>
+      <section className="space-y-3"><h2 className="font-display font-semibold">Historial de recepciones</h2>{!data.recepciones && <p className="text-xs text-amber">La consulta de historial requiere la propuesta de compras actualizada.</p>}{data.recepciones?.length===0 && <p className="text-xs text-ink-faint">Sin recepciones registradas.</p>}{data.recepciones?.map(r=><article key={r.clave} className="rounded-lg border border-line p-4"><div className="flex flex-wrap justify-between gap-2 text-sm"><span>Orden {r.orden_id.slice(0,8)}</span><span className="text-xs text-ink-faint">{fechaCorta(r.created_at.slice(0,10))}</span></div><p className="mt-1 break-all text-xs text-ink-faint">Referencia {r.clave}</p><ul className="mt-2 space-y-2">{data.recepcion_items?.filter(i=>i.clave===r.clave).map(i=><li key={i.movimiento_id} className="text-sm">{nombre(i.producto_id)} · {i.cantidad} u. · Movimiento #{i.movimiento_id}</li>)}</ul></article>)}</section>
     </>}
   </AppShell>;
 }
