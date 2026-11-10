@@ -67,10 +67,10 @@ export function AppShell({
           <header className="sticky top-0 z-10 border-b border-line bg-canvas/85 backdrop-blur-sm">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:px-6">
               <div className="min-w-0">
-                <h1 className="truncate font-display text-lg font-semibold tracking-tight">
+                <h1 className="break-words font-display text-lg font-semibold">
                   {titulo}
                 </h1>
-                <p className="truncate text-xs text-ink-faint">{subtitulo}</p>
+                <p className="break-words text-xs text-ink-faint">{subtitulo}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2.5">
                 {acciones}

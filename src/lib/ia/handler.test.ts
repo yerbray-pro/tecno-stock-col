@@ -1,0 +1,18 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+const mocks=vi.hoisted(()=>({acceso:vi.fn(),snapshot:vi.fn(),call:vi.fn(),rpc:vi.fn()}));
+vi.mock("./acceso.server",()=>({clienteAdministradorIA:mocks.acceso,snapshotIA:mocks.snapshot}));
+vi.mock("./responses.server",()=>({createResponsesCall:mocks.call}));
+import { handleInventarioIA } from "./handler.server";
+const request=()=>new Request("http://localhost:8080/api/inventario-ia",{method:"POST",headers:{Origin:"http://localhost:8080",Authorization:"Bearer test-only"}});
+const config={url:"https://test.invalid",key:"test-only",aiKey:"test-only"};
+const indicator={productoId:"1",nombre:"Prueba TecnoStock 001",stock:1,minimo:2,estado:"Stock bajo",minimoReponer:1,sugerido:1,historialSuficiente:false,salidasMes:0,tendencia:"Historial insuficiente",salidasPorMes:[0,0,0,0,0,0],prioridad:"Reponer"};
+beforeEach(()=>{vi.resetAllMocks();mocks.acceso.mockResolvedValue({rpc:mocks.rpc});mocks.snapshot.mockResolvedValue({indicadores:[indicator],firma:"test-only"});mocks.rpc.mockResolvedValue({error:null});});
+describe("Flujo seguro del servidor IA",()=>{
+  it("sin sesión no consulta ni llama IA",async()=>{mocks.acceso.mockRejectedValue(new Error("La sesión no es válida."));const r=await handleInventarioIA(request(),config);expect(r.status).toBe(401);expect(mocks.call).not.toHaveBeenCalled();expect(mocks.snapshot).not.toHaveBeenCalled();});
+  it("trabajador no consulta ni llama IA",async()=>{mocks.acceso.mockRejectedValue(new Error("Solo el administrador puede generar recomendaciones con IA."));const r=await handleInventarioIA(request(),config);expect(r.status).toBe(403);expect(mocks.call).not.toHaveBeenCalled();expect(mocks.rpc).not.toHaveBeenCalled();});
+  it("sin clave no consume cuota ni llama IA",async()=>{const r=await handleInventarioIA(request(),{...config,aiKey:undefined});expect(r.status).toBe(503);expect(mocks.rpc).not.toHaveBeenCalled();expect(mocks.call).not.toHaveBeenCalled();});
+  it("sin control de cuota no llama IA",async()=>{mocks.rpc.mockResolvedValue({error:{code:"PGRST202"}});const r=await handleInventarioIA(request(),config);expect(r.status).toBe(429);expect(mocks.call).not.toHaveBeenCalled();});
+  it("reserva cuota y devuelve hechos sin RPC de inventario",async()=>{mocks.call.mockReturnValue({result:{fullStream:(async function*(){yield {type:"text-delta",text:"resultado"};})(),output:Promise.resolve({explicaciones:[{productoId:"1",lectura:"stock"}]})}});const r=await handleInventarioIA(request(),config);const text=await r.text();expect(text).toContain('"tipo":"resultado"');expect(mocks.rpc.mock.calls).toEqual([["ts_ia_control",{p_accion:"reservar",p_motivo:null}]]);});
+  it("respuesta inválida nunca devuelve resultado",async()=>{mocks.call.mockReturnValue({result:{fullStream:(async function*(){})(),output:Promise.resolve({explicaciones:[{productoId:"inventado",lectura:"stock"}]})}});const r=await handleInventarioIA(request(),config);const text=await r.text();expect(text).toContain('"tipo":"error"');expect(text).not.toContain('"tipo":"resultado"');expect(mocks.call).toHaveBeenCalledTimes(1);});
+  it("rechaza origen diferente antes de validar sesión",async()=>{const r=await handleInventarioIA(new Request("http://localhost:8080/api/inventario-ia",{method:"POST",headers:{Origin:"https://otro.invalid"}}),config);expect(r.status).toBe(403);expect(mocks.acceso).not.toHaveBeenCalled();});
+});
