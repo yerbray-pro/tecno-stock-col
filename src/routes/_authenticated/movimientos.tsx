@@ -44,6 +44,8 @@ function Movimientos() {
     tipo: "salida" as "entrada" | "salida",
     cantidad: "1",
     fecha: "",
+    motivo: "",
+    observacion: "",
   });
 
   const lista = filtrarHistorial(movimientos, productos, filtros);
@@ -69,6 +71,8 @@ function Movimientos() {
                 tipo: form.tipo,
                 cantidad,
                 fecha: form.fecha,
+                motivo: form.motivo,
+                observacion: form.observacion,
               });
               setAviso(
                 r.ok
@@ -153,6 +157,8 @@ function Movimientos() {
               <input value={auth.nombre} readOnly className="campo mt-1" />
             </label>
 
+            <label className="block text-xs text-ink-soft">Motivo (opcional)<input className="campo mt-1" maxLength={500} value={form.motivo} onChange={e=>setForm({...form,motivo:e.target.value})}/></label>
+            <label className="block text-xs text-ink-soft">Observación (opcional)<textarea className="campo mt-1 min-h-20" maxLength={1000} value={form.observacion} onChange={e=>setForm({...form,observacion:e.target.value})}/></label>
             <BotonPrimario type="submit" className="w-full justify-center">
               {guardando ? "Guardando…" : "Registrar movimiento"}
             </BotonPrimario>

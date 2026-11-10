@@ -14,6 +14,9 @@ import { useQueryClient } from "@tanstack/react-query";
 import { CLAVE_INVENTARIO, useInventarioReal } from "@/lib/movimientos-supabase";
 import { crearProducto, editarProducto, validarProducto } from "@/lib/productos-supabase";
 import { useAuth } from "@/lib/auth";
+import { filtrarProductos, type FiltroProductos } from "@/lib/indicadores";
+import { paginar } from "@/lib/historial";
+import { ChevronLeft, ChevronRight, ListFilter } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/inventario")({
   head: () => ({
@@ -50,7 +53,8 @@ function Inventario() {
   const productos = carga.tipo === "listo" ? carga.productos : [];
   const [busqueda, setBusqueda] = useState("");
   const [categoria, setCategoria] = useState("Todas");
-  const [estadoFiltro, setEstadoFiltro] = useState("Todos");
+  const [estadoFiltro, setEstadoFiltro] = useState<FiltroProductos["estado"]>("Todos");
+  const [pagina, setPagina] = useState(1);
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [editando, setEditando] = useState<Producto | null>(null);
   const [formAbierto, setFormAbierto] = useState(false);
@@ -60,14 +64,8 @@ function Inventario() {
     [productos],
   );
 
-  const lista = productos.filter((p) => {
-    const coincide = `${p.nombre} ${p.marca} ${p.categoria}`
-      .toLowerCase()
-      .includes(busqueda.toLowerCase());
-    const cat = categoria === "Todas" || p.categoria === categoria;
-    const est = estadoFiltro === "Todos" || estadoDeProducto(p) === estadoFiltro;
-    return coincide && cat && est;
-  });
+  const lista = filtrarProductos(productos,{texto:busqueda,categoria,estado:estadoFiltro});
+  const pag = paginar(lista,pagina,20);
 
   const detalle = productos.find((p) => p.id === seleccionado) ?? null;
   const historial = detalle
@@ -120,13 +118,15 @@ function Inventario() {
         <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
           <input
             value={busqueda}
-            onChange={(e) => setBusqueda(e.target.value)}
-            placeholder="Buscar productos, marcas o categorías…"
+            onChange={(e) => {setBusqueda(e.target.value);setPagina(1);}}
+            placeholder="Nombre, código, marca o modelo…"
+            aria-label="Buscar productos"
             className="w-full rounded-[10px] border border-line bg-canvas px-3 py-2 text-sm outline-none placeholder:text-ink-faint focus:ring-2 focus:ring-brand/30"
           />
           <select
             value={categoria}
-            onChange={(e) => setCategoria(e.target.value)}
+            onChange={(e) => {setCategoria(e.target.value);setPagina(1);}}
+            aria-label="Filtrar categoría"
             className="rounded-[10px] border border-line bg-panel px-3 py-2 text-sm text-ink-soft outline-none focus:ring-2 focus:ring-brand/30"
           >
             {categorias.map((c) => (
@@ -135,7 +135,8 @@ function Inventario() {
           </select>
           <select
             value={estadoFiltro}
-            onChange={(e) => setEstadoFiltro(e.target.value)}
+            onChange={(e) => {setEstadoFiltro(e.target.value as FiltroProductos["estado"]);setPagina(1);}}
+            aria-label="Filtrar existencias"
             className="rounded-[10px] border border-line bg-panel px-3 py-2 text-sm text-ink-soft outline-none focus:ring-2 focus:ring-brand/30"
           >
             {["Todos", "Disponible", "Stock bajo", "Agotado"].map((e) => (
@@ -143,6 +144,7 @@ function Inventario() {
             ))}
           </select>
         </div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-ink-faint">{lista.length} productos</span><BotonSuave onClick={()=>{setBusqueda("");setCategoria("Todas");setEstadoFiltro("Todos");setPagina(1);}}><ListFilter className="size-3.5"/>Limpiar filtros</BotonSuave></div>
       </Panel>
 
       <div className="grid gap-4 xl:grid-cols-3">
@@ -161,7 +163,7 @@ function Inventario() {
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {lista.map((p) => {
+                {pag.items.map((p) => {
                   const estado = estadoDeProducto(p);
                   return (
                     <tr
@@ -169,7 +171,7 @@ function Inventario() {
                       onClick={() => setSeleccionado(p.id)}
                       className={`cursor-pointer hover:bg-canvas/60 ${seleccionado === p.id ? "bg-brand/5" : ""}`}
                     >
-                      <td className="px-5 py-3 font-medium">{p.nombre}</td>
+                      <td className="px-5 py-3 font-medium">{p.nombre}<p className="mt-1 text-xs font-normal text-ink-faint">#{p.id} · {p.modelo || p.marca}</p></td>
                       <td className="px-3 py-3 text-ink-soft">{p.categoria}</td>
                       <td className="px-3 py-3 text-ink-soft">{p.marca}</td>
                       <td className="px-3 py-3 text-right font-mono text-[13px]">{p.stock}</td>
@@ -218,6 +220,7 @@ function Inventario() {
               </tbody>
             </table>
           </div>
+          {pag.total>1 && <div className="flex items-center justify-between gap-3 border-t border-line px-5 py-3 text-xs text-ink-faint"><span>Página {pag.actual} de {pag.total}</span><div className="flex gap-2"><BotonSuave aria-label="Página anterior" title="Anterior" disabled={pag.actual===1} onClick={()=>setPagina(pag.actual-1)}><ChevronLeft className="size-4"/></BotonSuave><BotonSuave aria-label="Página siguiente" title="Siguiente" disabled={pag.actual===pag.total} onClick={()=>setPagina(pag.actual+1)}><ChevronRight className="size-4"/></BotonSuave></div></div>}
         </Panel>
 
         {detalle && (
