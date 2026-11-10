@@ -17,6 +17,7 @@ import { Route as AuthenticatedInventarioRouteImport } from './routes/_authentic
 import { Route as AuthenticatedMovimientosRouteImport } from './routes/_authenticated/movimientos'
 import { Route as AuthenticatedProveedoresRouteImport } from './routes/_authenticated/proveedores'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as ApiInventarioIaRouteImport } from './routes/api/inventario-ia'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
   id: '/_authenticated',
@@ -59,6 +60,11 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiInventarioIaRoute = ApiInventarioIaRouteImport.update({
+  id: '/api/inventario-ia',
+  path: '/api/inventario-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
@@ -68,6 +74,7 @@ export interface FileRoutesByFullPath {
   '/movimientos': typeof AuthenticatedMovimientosRoute
   '/proveedores': typeof AuthenticatedProveedoresRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/inventario-ia': typeof ApiInventarioIaRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
@@ -76,6 +83,7 @@ export interface FileRoutesByTo {
   '/movimientos': typeof AuthenticatedMovimientosRoute
   '/proveedores': typeof AuthenticatedProveedoresRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/inventario-ia': typeof ApiInventarioIaRoute
   '/': typeof AuthenticatedIndexRoute
 }
 export interface FileRoutesById {
@@ -87,6 +95,7 @@ export interface FileRoutesById {
   '/_authenticated/movimientos': typeof AuthenticatedMovimientosRoute
   '/_authenticated/proveedores': typeof AuthenticatedProveedoresRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/inventario-ia': typeof ApiInventarioIaRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
 export interface FileRouteTypes {
@@ -99,6 +108,7 @@ export interface FileRouteTypes {
     | '/movimientos'
     | '/proveedores'
     | '/usuarios'
+    | '/api/inventario-ia'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/movimientos'
     | '/proveedores'
     | '/usuarios'
+    | '/api/inventario-ia'
     | '/'
   id:
     | '__root__'
@@ -117,12 +128,14 @@ export interface FileRouteTypes {
     | '/_authenticated/movimientos'
     | '/_authenticated/proveedores'
     | '/_authenticated/usuarios'
+    | '/api/inventario-ia'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiInventarioIaRoute: typeof ApiInventarioIaRoute
 }
 
 declare module '@tanstack/react-router' {
@@ -183,6 +196,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/inventario-ia': {
+      id: '/api/inventario-ia'
+      path: '/api/inventario-ia'
+      fullPath: '/api/inventario-ia'
+      preLoaderRoute: typeof ApiInventarioIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
   }
 }
 
@@ -210,6 +230,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiInventarioIaRoute: ApiInventarioIaRoute,
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)
