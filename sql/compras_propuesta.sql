@@ -9,6 +9,8 @@ DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='full_name') THEN RAISE EXCEPTION 'Inspeccionar profiles.full_name'; END IF;
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='movimientos' AND column_name='usuario_id') THEN RAISE EXCEPTION 'Inspeccionar movimientos.usuario_id'; END IF;
  IF to_regprocedure('public.registrar_movimiento(bigint,text,integer,timestamp with time zone,text,text,text)') IS NULL THEN RAISE EXCEPTION 'Firma registrar_movimiento incompatible'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc p WHERE p.oid=to_regprocedure('public.registrar_movimiento(bigint,text,integer,timestamp with time zone,text,text,text)') AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') THEN RAISE EXCEPTION 'Revisar SECURITY DEFINER y propietario de registrar_movimiento antes de instalar compras'; END IF;
+ IF to_regclass('public.user_roles') IS NULL THEN RAISE EXCEPTION 'Falta inspeccionar user_roles'; END IF;
 END $$;
 CREATE FUNCTION public.ts_es_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT auth.uid() IS NOT NULL AND EXISTS(SELECT 1 FROM public.user_roles r JOIN auth.users u ON u.id=r.user_id WHERE r.user_id=auth.uid() AND coalesce(to_jsonb(r)->>'role',to_jsonb(r)->>'rol')='admin' AND (u.banned_until IS NULL OR u.banned_until<=now()));

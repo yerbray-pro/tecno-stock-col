@@ -27,6 +27,7 @@ export function createResponsesCall(
     output: Output.object({ schema: salidaModelo }),
     maxOutputTokens: 4000,
     maxRetries: 0,
+    streamRetries: 0,
     // AI SDK 6 lacks `instructions`: rename this key to `system` there.
     ...(instructions ? { instructions } : {}),
     messages,
