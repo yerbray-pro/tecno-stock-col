@@ -1,5 +1,12 @@
 # TecnoStock: entrega y seguridad
 
+## Solicitud del 10 de noviembre: IA y presentación
+- [ ] Confirmar que la rama sincronizada de Lovable es main antes de implementar; el checkout local muestra una rama interna edit/.
+- [ ] Añadir asistente IA administrativo de solo lectura con indicadores reales, salida validada y controles de costo; pendiente configuración de proveedor y servidor.
+- [ ] Mejorar Dashboard, filtros de Análisis, búsqueda/paginación de Inventario y formularios de movimientos reutilizando datos compartidos.
+- [ ] Revisar propuesta de compras, permisos, concurrencia, dependencias e historial de recepciones; entregar SQL manual sin ejecutarlo.
+- [ ] Ejecutar pruebas y entregar guía de Vercel Preview y QA; integración real bloqueada por conexión/sesiones/claves no disponibles aquí.
+
 ## Revisión prioritaria: datos compartidos, reposición y trabajadores
 - [x] Confirmar en código que Dashboard, Inventario, Análisis y Proveedores usan la misma consulta y que movimientos/Realtime invalidan esa clave compartida.
 - [x] Confirmar reposición para cantidad <= stock_minimo, el caso Prueba TecnoStock 001 (1/2) y la etiqueta Agotado — Urgente; 59 pruebas y compilación correctas.
