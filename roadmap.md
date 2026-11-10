@@ -1,11 +1,13 @@
 # TecnoStock: entrega y seguridad
 
 ## Solicitud del 10 de noviembre: IA y presentación
-- [ ] Confirmar que la rama sincronizada de Lovable es main antes de implementar; el checkout local muestra una rama interna edit/.
-- [ ] Añadir asistente IA administrativo de solo lectura con indicadores reales, salida validada y controles de costo; pendiente configuración de proveedor y servidor.
-- [ ] Mejorar Dashboard, filtros de Análisis, búsqueda/paginación de Inventario y formularios de movimientos reutilizando datos compartidos.
-- [ ] Revisar propuesta de compras, permisos, concurrencia, dependencias e historial de recepciones; entregar SQL manual sin ejecutarlo.
-- [ ] Ejecutar pruebas y entregar guía de Vercel Preview y QA; integración real bloqueada por conexión/sesiones/claves no disponibles aquí.
+- [x] Confirmar main como rama sincronizada: confirmado por el usuario, sin cambiar Git ni producción.
+- [x] Implementar asistente IA administrativo, salida estricta y cuota duradera propuesta; llamada real de contrato válida con muestra técnica sintética.
+- [x] Mejorar Dashboard, filtros de Análisis, búsqueda/paginación de Inventario y motivo/observación en movimientos reutilizando datos compartidos.
+- [x] Revisar SQL manual de compras: permisos implícitos, dependencia SECURITY DEFINER/owner, orden de bloqueo e historial; no ejecutado.
+- [x] Ejecutar 84 pruebas, comprobar build OK y rechazo HTTP 401 sin sesión; entregar docs/IA_PREVIEW_QA.md.
+- [ ] Activar/probar asistente completo en Vercel Preview. Bloqueado: variables del servidor externo, SQL ts_ia_control no instalado y sesión administrativa no disponible aquí.
+- [ ] Validar presentación de las cinco pantallas privadas y Realtime con datos/sesiones reales. Bloqueado: conexión externa y sesión no disponibles en este entorno.
 
 ## Revisión prioritaria: datos compartidos, reposición y trabajadores
 - [x] Confirmar en código que Dashboard, Inventario, Análisis y Proveedores usan la misma consulta y que movimientos/Realtime invalidan esa clave compartida.

@@ -25,7 +25,7 @@ export function prepararIndicadoresIA(productos: Producto[], movimientos: Movimi
 /** Model selects the explanation lens; all factual text and numbers are rendered from verified indicators. */
 export function validarExplicaciones(value: unknown, indicadores: IndicadorIA[]) {
   const salida = salidaModelo.parse(value);
-  if (!salida.explicaciones.length || salida.explicaciones.length > indicadores.length) throw new Error("La IA devolvió una lista inválida.");
+  if (!salida.explicaciones.length || salida.explicaciones.length > Math.min(12,indicadores.length)) throw new Error("La IA devolvió una lista inválida.");
   const ids = new Set<string>();
   return salida.explicaciones.map(e => {
     const i = indicadores.find(p => p.productoId === e.productoId);

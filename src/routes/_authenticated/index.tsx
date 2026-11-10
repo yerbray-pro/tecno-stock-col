@@ -4,7 +4,7 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useCompras } from "@/lib/compras";
 import { GraficoBarras, LeyendaGrafico } from "@/components/GraficoBarras";
-import { clavesDeMeses, fechaColombia, recomendaciones, serieMensual } from "@/lib/analisis";
+import { fechaColombia } from "@/lib/analisis";
 import { estadoDeProducto, eventosComerciales } from "@/lib/data";
 import { numero, pesos, fechaCorta } from "@/lib/format";
 import { useInventarioReal } from "@/lib/movimientos-supabase";
