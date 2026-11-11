@@ -47,7 +47,7 @@ function Dashboard() {
   const compras = useCompras(auth.rol === "administrador");
   const [categoria, setCategoria] = useState("Todas");
   const { estado: carga, recargar } = useInventarioReal();
-  const todos = carga.tipo === "listo" ? carga.productos : [];
+  const todos = carga.tipo === "listo" ? carga.productos.filter(p => p.activo !== false) : [];
   const productos = todos.filter(p => categoria === "Todas" || p.categoria === categoria);
   const movimientos = carga.tipo === "listo" ? carga.movimientos.filter(m => productos.some(p => p.id === m.productoId)) : [];
   const resumen = indicadoresInventario(productos, movimientos);
