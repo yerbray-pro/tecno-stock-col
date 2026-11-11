@@ -85,7 +85,7 @@ function Promociones() {
     <Panel className="p-4 sm:p-5">
       <h2 className="font-display text-base font-semibold">Campañas comerciales</h2>
       <p className="mt-2 text-sm text-ink-soft">Una campaña se activa automáticamente entre su fecha de inicio y fin, siempre que el administrador la haya habilitado. No modifica las existencias ni el costo del proveedor.</p>
-      <p className="mt-2 text-xs text-ink-faint">TecnoStock todavía no registra precios de venta ni facturación: el porcentaje promocional es informativo y no calcula un precio final de venta.</p>
+      <p className="mt-2 text-xs text-ink-faint">El descuento ya se muestra en Inventario y Dashboard. Para calcular su precio final, configura primero el precio de venta del producto en Inventario. No altera costos ni cobra automáticamente.</p>
     </Panel>
 
     {auth.rol === "administrador" && <Panel className="p-5">
