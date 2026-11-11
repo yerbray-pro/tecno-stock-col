@@ -19,7 +19,7 @@ const SUGERENCIAS = [
   "¿Qué productos debo reponer y cuántos?",
   "¿Qué proveedor vende más baratos los audífonos?",
   "¿Cuántas entradas registramos hoy?",
-  "¿Qué productos tienen más salidas?",
+  "¿Cuándo recibimos los audífonos y quién los recibió?",
 ];
 function AsistenteIA() {
   const auth = useAuth();
