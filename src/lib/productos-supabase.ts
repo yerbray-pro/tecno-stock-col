@@ -29,6 +29,7 @@ export function filaAProducto(f: Fila): Producto {
     stock: num(leer(f, "stock", "stock_actual", "stockActual", "cantidad")),
     stockMinimo: num(leer(f, "stock_minimo", "stockMinimo", "stock_min")),
     precioCompra: num(leer(f, "precio_compra", "precioCompra", "precio")),
+    precioVenta: leer(f, "precio_venta") == null ? null : num(leer(f, "precio_venta")),
     registrado: texto(leer(f, "registrado", "created_at", "fecha_registro")).slice(0, 10),
     activo: leer(f, "activo") !== false,
   };
