@@ -196,8 +196,25 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
       const activoProveedor = new Map(proveedores.map(p => [texto(p.id), p.activo !== false]));
       const ordenes = lista(c.ordenes);
       const items = lista(c.items);
+      const recepciones = lista(c.recepciones);
+      const recepcionItems = lista(c.recepcion_items);
+      const recibidas = recepciones.map(r => ({
+        clave: texto(r.clave),
+        ordenId: texto(r.orden_id),
+        proveedor: nombreProveedor.get(texto(ordenes.find(o => texto(o.id) === texto(r.orden_id))?.proveedor_id)) ?? "Proveedor",
+        fecha: texto(r.created_at),
+        responsable: texto(r.usuario_responsable),
+        items: recepcionItems.filter(i => texto(i.clave) === texto(r.clave)).map(i => ({
+          productoId: texto(i.producto_id),
+          producto: porId.get(texto(i.producto_id)) ?? "Producto fuera del catálogo activo",
+          cantidad: cantidad(i.cantidad),
+          movimientoId: texto(i.movimiento_id),
+        })),
+      })).sort((a,b)=>Date.parse(b.fecha)-Date.parse(a.fecha));
       compras = {
         disponible: true,
+        recepcionesDisponible: Array.isArray(c.recepciones) && Array.isArray(c.recepcion_items),
+        recepciones: recibidas,
         ordenes: ordenes.map(o => ({
           id: texto(o.id), proveedor: nombreProveedor.get(texto(o.proveedor_id)) ?? "Proveedor",
           estado: texto(o.estado), fecha: texto(o.created_at),
@@ -227,6 +244,11 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
       }[] }[];
       comparacionPrecios?: { proveedorId: string; proveedor: string; productoId: string;
         producto: string; precio: number; activo: boolean }[];
+      recepcionesDisponible?: boolean;
+      recepciones?: {
+        clave:string; ordenId:string; proveedor:string; fecha:string; responsable:string;
+        items: {productoId:string; producto:string; cantidad:number; movimientoId:string}[];
+      }[];
     };
     const datosConsultas: DatosConsulta = {
       rol: role,
@@ -241,10 +263,12 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
         disponible: comprasTipadas.disponible,
         ordenes: comprasTipadas.ordenes ?? [],
         cotizaciones: role === "administrador" ? (comprasTipadas.comparacionPrecios ?? []) : [],
+        recepcionesDisponible: comprasTipadas.recepcionesDisponible ?? false,
+        recepciones: comprasTipadas.recepciones ?? [],
       },
       promociones: { disponible: promocionesDisponibles, vigentes: promociones },
     };
-    const respuestaConsultada = responderConsultasReales(pregunta, datosConsultas);
+    const respuestaConsultada = responderConsultasReales(pregunta, datosConsultas, hoyColombia);
     if (respuestaConsultada !== null) return Response.json({
       respuesta: personalizar(respuestaConsultada), modelo: "datos-supabase",
     }, { headers: { "Cache-Control": "no-store" } });
@@ -283,6 +307,8 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
       "El stock actual es el campo stock, no las entradas históricas. Si preguntan por audífonos, enumera coincidencias y suma solo si corresponde.",
       "Si preguntan por pedidos abiertos, cuenta Pendiente, Enviada y Parcialmente recibida.",
       "Si compras.disponible es false, explica que no se pudo consultar compras; no digas que hay cero órdenes.",
+      "Para recepciones usa compras.recepciones y sus fechas reales, responsable y productos. No confundas fecha de orden con fecha de entrega.",
+      "Las respuestas sobre operaciones de hoy se basan en fecha local America/Bogota y deben ser exactas.",
       "Si promociones.disponible es false, no afirmes que no existen promociones.",
       "El precio público es precioVenta, no precioCompra. El descuento afecta el precio final calculado.",
       "Para responsables y últimas operaciones usa movimientosRecientes con responsable y motivo.",
