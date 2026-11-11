@@ -2,7 +2,8 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "./supabase";
 export const CLAVE_PROMOCIONES = ["promociones"] as const;
 export type Promocion = {
-  id: number; nombre: string; producto_id: number; descuento_porcentaje: number;
+  id: number; nombre: string; producto_id: number | null; categoria?: string | null;
+  alcance?: "producto" | "categoria" | "todos"; descuento_porcentaje: number;
   fecha_inicio: string; fecha_fin: string; habilitada: boolean;
   estado: "Activa" | "Programada" | "Finalizada" | "Desactivada";
 };
