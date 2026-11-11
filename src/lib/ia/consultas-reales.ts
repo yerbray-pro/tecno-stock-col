@@ -49,7 +49,9 @@ function seleccionarProductos(pregunta: string, productos: ProductoConsulta[]): 
   const nombreCompleto = productos.filter(p => q.includes(normalizar(p.nombre)) && p.nombre.length > 3);
   if (nombreCompleto.length) {
     const mayor = Math.max(...nombreCompleto.map(p => p.nombre.length));
-    return nombreCompleto.filter(p => p.nombre.length === mayor);
+    // "Audífonos" puede ser referencia exacta Y nombre genérico de una familia.
+    // Solo forzar coincidencia exacta con nombre completo si es descriptivo.
+    if (mayor > 10) return nombreCompleto.filter(p => p.nombre.length === mayor);
   }
   const tokens = ["audifon", "teclad", "mouse", "cargador", "parlant", "webcam",
     "cable", "adaptador", "memoria", "ssd", "monitor", "impresora", "camara", "disco"];
