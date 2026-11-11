@@ -113,7 +113,7 @@ function Analisis() {
           </div>
           <LeyendaGrafico />
         </div>
-        <GraficoBarras serie={serie} />
+        <GraficoBarras serie={serie} movimientos={movimientos} />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Resumen
             titulo="Salidas del último mes"
