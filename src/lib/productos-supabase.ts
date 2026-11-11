@@ -43,7 +43,7 @@ export type EstadoCarga =
 export type NuevoProducto = Omit<Producto, "id" | "registrado">;
 
 /** Nombres alternativos aceptados para cada campo (el primero es el preferido). */
-const COLUMNAS: Record<Exclude<keyof NuevoProducto, "activo">, string[]> = {
+const COLUMNAS: Record<Exclude<keyof NuevoProducto, "activo" | "precioVenta">, string[]> = {
   nombre: ["nombre", "name"],
   categoria: ["categoria", "category"],
   marca: ["marca", "brand"],
