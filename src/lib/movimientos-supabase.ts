@@ -111,7 +111,7 @@ async function leerInventario(): Promise<{ productos: Producto[]; movimientos: M
     }
   };
   const [p, m] = await Promise.all([
-    leerTodo("productos", "id,nombre,categoria,cantidad,stock_minimo,marca,modelo,precio_compra,created_at,activo"),
+    leerTodo("productos", "*"),
     leerTodo("movimientos", "id,producto_id,tipo,cantidad,motivo,usuario_responsable,usuario_id,fecha,observacion,created_at"),
   ]);
   return {
