@@ -4,7 +4,7 @@ import { AppShell, BotonPrimario, BotonSuave, Etiqueta, Panel } from "@/componen
 import { useAuth } from "@/lib/auth";
 import { fechaCorta } from "@/lib/format";
 import { useMovimientosSupabase } from "@/lib/movimientos-supabase";
-import { FILTROS_VACIOS, filtrarHistorial, paginar, type FiltrosHistorial } from "@/lib/historial";
+import { FILTROS_VACIOS, filtrarHistorial, paginar, etiquetaMovimiento, type FiltrosHistorial } from "@/lib/historial";
 
 const POR_PAGINA = 20;
 
@@ -236,7 +236,7 @@ function Movimientos() {
                     </td>
                     <td className="px-3 py-3">
                       <Etiqueta tono={m.tipo === "entrada" ? "brand" : "teal"} punto>
-                        {m.tipo === "entrada" ? "Entrada" : "Salida"}
+                        {etiquetaMovimiento(m)}
                       </Etiqueta>
                     </td>
                     <td className="px-3 py-3 text-right font-mono text-[13px]">
