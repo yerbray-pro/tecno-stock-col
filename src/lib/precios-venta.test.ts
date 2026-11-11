@@ -21,6 +21,11 @@ describe("precios de venta y promociones", () => {
       base:null,final:null,descuento:0,
     });
   });
+  it("sigue indicando la promoción activa aunque falte precio de venta", () => {
+    expect(precioPresentado({...producto,precioVenta:null},[promo(1,20,"producto")])).toMatchObject({
+      base:null,final:null,descuento:20,nombrePromocion:"Oferta",
+    });
+  });
   it("descuenta sobre el precio de venta y no el costo", () => {
     expect(precioPresentado(producto,[promo(1,20,"producto")])).toMatchObject({
       base:100000, final:80000, descuento:20, margenEstimado:35000,
