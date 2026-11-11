@@ -1,6 +1,8 @@
 import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
+import { AsistenteRapido } from "./AsistenteRapido";
+import { CentroAlertas } from "./CentroAlertas";
 
 const NAV = [
   { to: "/", icono: "▦", texto: "Dashboard" },
@@ -76,6 +78,7 @@ export function AppShell({
               </div>
               <div className="flex shrink-0 items-center gap-2.5">
                 {acciones}
+                <CentroAlertas />
                 <span title={auth.nombre} className="hidden max-w-32 truncate text-xs text-ink-soft lg:block">{auth.nombre}</span>
                 <BotonSuave disabled={leaving} onClick={async () => {
                   setLeaving(true); setSessionError("");
@@ -100,6 +103,7 @@ export function AppShell({
           </header>
 
           <main className="space-y-4 px-4 py-5 sm:px-6">{sessionError && <p role="alert" className="text-sm text-rose">{sessionError}</p>}{children}</main>
+          <AsistenteRapido />
         </div>
       </div>
     </div>
