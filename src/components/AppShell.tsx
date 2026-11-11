@@ -10,6 +10,7 @@ const NAV = [
   { to: "/movimientos", icono: "⇄", texto: "Movimientos" },
   { to: "/proveedores", icono: "▣", texto: "Proveedores" },
   { to: "/recepciones", icono: "⇩", texto: "Recepciones" },
+  { to: "/promociones", icono: "%", texto: "Promociones" },
   { to: "/analisis", icono: "∿", texto: "Análisis" },
   { to: "/asistente-ia", icono: "✦", texto: "Asistente IA" },
 ] as const;
