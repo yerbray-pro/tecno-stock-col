@@ -61,7 +61,10 @@ function Analisis() {
         <label className="text-xs text-ink-soft">Existencias<select className="campo mt-1" value={filtros.estado} onChange={e=>setFiltros({...filtros,estado:e.target.value as FiltroProductos["estado"]})}><option value="Todos">Todos los estados</option><option value="Agotado">Agotado — Urgente</option><option value="Stock bajo">Reponer</option><option value="Disponible">Stock suficiente</option></select></label>
         <div className="flex items-end"><BotonSuave onClick={()=>setFiltros({texto:"",categoria:"Todas",estado:"Todos",productoId:""})}>Limpiar filtros</BotonSuave></div>
       </section>
-      <AccesoAsistenteIA />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AccesoAsistenteIA />
+        <ResumenInteligente />
+      </div>
       <section className="space-y-3">
         <h2 className="font-display text-base font-semibold">Alertas de stock y reposición</h2>
         <ul className="grid gap-3 lg:grid-cols-2">{necesidades.map(r => <li key={r.producto.id} className="rounded-lg border border-line p-3">
