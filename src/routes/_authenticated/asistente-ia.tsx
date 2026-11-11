@@ -77,7 +77,7 @@ function AsistenteIA() {
             {m.text}
           </div>
         </div>)}
-        {enviando && <p role="status" className="text-sm text-ink-faint">Consultando Supabase y Gemini…</p>}
+        {enviando && <p role="status" className="flex items-center gap-2 text-sm text-ink-faint"><span className="inline-flex gap-1" aria-hidden="true"><span className="size-1.5 animate-pulse rounded-full bg-brand"/><span className="size-1.5 animate-pulse rounded-full bg-brand"/><span className="size-1.5 animate-pulse rounded-full bg-brand"/></span>Preparando tu respuesta…</p>}
         <div ref={fondo}/>
       </div>
       {error && <p role="alert" className="mt-3 rounded-lg bg-rose/10 p-3 text-sm text-rose">{error}</p>}
