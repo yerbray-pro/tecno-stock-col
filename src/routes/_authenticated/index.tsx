@@ -4,6 +4,7 @@ import { AppShell, Etiqueta, Panel, BotonPrimario, BotonSuave, tonoEstado } from
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useCompras } from "@/lib/compras";
+import { usePromociones } from "@/lib/promociones";
 import { GraficoBarras, LeyendaGrafico } from "@/components/GraficoBarras";
 import { fechaColombia } from "@/lib/analisis";
 import { estadoDeProducto, eventosComerciales } from "@/lib/data";
@@ -45,6 +46,8 @@ const FONDO_EVENTO: Record<string, string> = {
 function Dashboard() {
   const auth = useAuth();
   const compras = useCompras(Boolean(auth.rol), auth.user?.id, auth.rol);
+  const promociones = usePromociones(Boolean(auth.rol), auth.user?.id, auth.rol);
+  const campañasActivas = (promociones.data ?? []).filter(p => p.estado === "Activa");
   const [categoria, setCategoria] = useState("Todas");
   const { estado: carga, recargar } = useInventarioReal();
   const todos = carga.tipo === "listo" ? carga.productos.filter(p => p.activo !== false) : [];
@@ -150,6 +153,18 @@ function Dashboard() {
               </li>
             ))}
           </ul>
+          <div className="mt-4 space-y-2 border-t border-line pt-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-xs font-semibold">Promociones vigentes</h3>
+              <Link to="/promociones" className="text-xs text-brand">Ver promociones →</Link>
+            </div>
+            {campañasActivas.length === 0 && <p className="text-xs text-ink-faint">
+              {promociones.isError ? "Promociones todavía no configuradas o no disponibles." : "No hay promociones activas en este momento."}
+            </p>}
+            {campañasActivas.slice(0,3).map(p => <p key={p.id} className="text-xs text-ink-soft">
+              <span className="font-semibold text-teal">{p.descuento_porcentaje}%</span> · {p.nombre} · {productos.find(x => Number(x.id) === Number(p.producto_id))?.nombre ?? "Producto"}
+            </p>)}
+          </div>
         </Panel>
       </section>
 
