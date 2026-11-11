@@ -9,6 +9,8 @@ export type Producto = {
   stock: number;
   stockMinimo: number;
   precioCompra: number;
+  /** Precio de venta al cliente, separado del costo del proveedor. */
+  precioVenta?: number | null;
   registrado: string;
   activo?: boolean;
 };
