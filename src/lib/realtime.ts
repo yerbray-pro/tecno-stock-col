@@ -27,6 +27,8 @@ export function useInventarioRealtime() {
       .on("postgres_changes", { event: "*", schema: "public", table: "ts_catalogo" }, recargar)
       .on("postgres_changes", { event: "*", schema: "public", table: "ts_ordenes" }, recargar)
       .on("postgres_changes", { event: "*", schema: "public", table: "ts_orden_items" }, recargar)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ts_recepciones" }, recargar)
+      .on("postgres_changes", { event: "INSERT", schema: "public", table: "ts_recepcion_items" }, recargar)
       .subscribe();
     return () => {
       clearTimeout(temporizador);
