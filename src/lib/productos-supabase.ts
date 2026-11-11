@@ -60,7 +60,7 @@ const COLUMNAS: Record<Exclude<keyof NuevoProducto, "activo" | "precioVenta">, s
 export function construirFila(p: NuevoProducto, ejemplo?: Fila): Fila {
   const existentes = ejemplo ? Object.keys(ejemplo) : [];
   const fila: Fila = {};
-  for (const campo of Object.keys(COLUMNAS) as (Exclude<keyof NuevoProducto, "activo">)[]) {
+  for (const campo of Object.keys(COLUMNAS) as (Exclude<keyof NuevoProducto, "activo" | "precioVenta">)[]) {
     const opciones = COLUMNAS[campo];
     const col = opciones.find((c) => existentes.includes(c)) ?? (opciones[0] as string);
     fila[col] = p[campo];
