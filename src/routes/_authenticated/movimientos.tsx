@@ -186,7 +186,7 @@ function Movimientos() {
               <input className="campo mt-1" required maxLength={500} value={motivoOtro}
                 onChange={e => setMotivoOtro(e.target.value)}
                 placeholder="Escribe por qué se registra…" />
-            </label>
+            </label>}
             <label className="block text-xs text-ink-soft">Observación (opcional)<textarea className="campo mt-1 min-h-20" maxLength={1000} value={form.observacion} onChange={e=>setForm({...form,observacion:e.target.value})}/></label>
             <BotonPrimario type="submit" className="w-full justify-center">
               {guardando ? "Guardando…" : "Registrar movimiento"}
