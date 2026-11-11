@@ -13,6 +13,7 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
   // A failed/uncertain receipt retains the exact key AND payload, including across reloads.
   const [intento, setIntento] = useState<null | { orden_id: string; clave: string; items: { producto_id: string; cantidad: number }[] }>(null);
   const [error, setError] = useState("");
+  const [detalles, setDetalles] = useState(false);
   const abierta = ["Pendiente", "Enviada", "Parcialmente recibida"].includes(orden.estado);
   const [restaurado, setRestaurado] = useState(false);
   useEffect(() => {
@@ -48,7 +49,34 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
     finally { enProceso.current = false; }
 
   }
-  return <Panel className="space-y-3 p-5"><div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-medium">Orden {orden.id.slice(0,8)} · {empresa}</h3><p className="text-xs text-ink-faint">{fechaCorta(orden.created_at.slice(0,10))} {admin && totalOrden(items) !== undefined && <> · Total {pesos(totalOrden(items) ?? 0)}</>}</p></div><Etiqueta>{orden.estado}</Etiqueta></div>
+  const fechaCreacion = new Date(orden.created_at).toLocaleString("es-CO", {
+    timeZone: "America/Bogota", dateStyle: "medium", timeStyle: "short",
+  });
+  const pagado = items.reduce((acc, i) => acc + i.recibida * (i.precio_unitario ?? 0), 0);
+  return <Panel className="space-y-3 p-5"><div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-medium">Orden {orden.id.slice(0,8)} · {empresa}</h3><p className="text-xs text-ink-faint">Creada el {fechaCreacion} · {orden.estado}</p></div><Etiqueta>{orden.estado}</Etiqueta></div>
+    <button type="button" onClick={() => setDetalles(v => !v)}
+      className="rounded-lg border border-line px-3 py-2 text-xs text-brand"
+      aria-expanded={detalles}>{detalles ? "Ocultar detalles de compra" : "Ver detalle de la orden"}</button>
+    {detalles && <div className="space-y-3 rounded-lg border border-line bg-canvas p-4">
+      <p className="text-xs"><span className="font-semibold">Proveedor:</span> {empresa || "No identificado"} · <span className="font-semibold">Orden:</span> {orden.id}</p>
+      <p className="text-xs"><span className="font-semibold">Fecha de creación:</span> {fechaCreacion}</p>
+      <table className="w-full text-left text-xs">
+        <thead><tr className="border-b border-line"><th className="py-2">Producto</th><th className="py-2 text-right">Pedido</th><th className="py-2 text-right">Recibido</th>{admin && <><th className="py-2 text-right">Unitario</th><th className="py-2 text-right">Subtotal</th></>}</tr></thead>
+        <tbody>{items.map(i => <tr className="border-b border-line" key={i.producto_id}>
+          <td className="py-2">{nombre(i.producto_id)}</td>
+          <td className="py-2 text-right">{i.cantidad}</td>
+          <td className="py-2 text-right">{i.recibida}</td>
+          {admin && <><td className="py-2 text-right">{i.precio_unitario === undefined ? "Sin acceso" : pesos(i.precio_unitario)}</td>
+            <td className="py-2 text-right">{i.precio_unitario === undefined ? "Sin acceso" : pesos(i.precio_unitario * i.cantidad)}</td></>}
+        </tr>)}</tbody>
+      </table>
+      {admin && <div className="space-y-1 text-right text-xs font-medium">
+        <p>Total de la orden: {totalOrden(items) === undefined ? "No disponible" : pesos(totalOrden(items) ?? 0)}</p>
+        {items.every(i => i.precio_unitario !== undefined) && <><p>Valor recibido: {pesos(pagado)}</p>
+        <p>Valor pendiente: {pesos((totalOrden(items) ?? 0) - pagado)}</p></>}
+        <p className="font-normal text-ink-faint">Precios fijados al crear la orden; no cambian si cambia la cotización.</p>
+      </div>}
+    </div>}
     <form onSubmit={recibir} className="space-y-3">{items.map(i => <div key={i.producto_id} className="grid items-center gap-2 sm:grid-cols-[2fr_1fr_1fr]"><span className="text-sm">{nombre(i.producto_id)}</span><span className="text-xs text-ink-soft">{i.recibida} / {i.cantidad} recibidas · Pendiente {cantidadPendiente(i)} {admin && i.precio_unitario !== undefined && <> · {pesos(i.precio_unitario)}</>}</span>{abierta && !intento && <Campo titulo="Cantidad recibida"><input className="campo" type="number" min="0" max={cantidadPendiente(i)} step="1" disabled={busy || !restaurado || Boolean(intento)} value={cantidades[String(i.producto_id)] ?? "0"} onChange={e => setCantidades({ ...cantidades, [i.producto_id]: e.target.value })}/></Campo>}</div>)}
       {intento && <p role="status" className="text-xs text-amber">Recepción por confirmar: {intento.items.map(i => `${nombre(i.producto_id)}: ${i.cantidad} u.`).join(" · ")}</p>}
       {error && <p role="alert" className="text-xs text-rose">{error}</p>}
