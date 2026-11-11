@@ -10,7 +10,7 @@ import { estadoDeProducto, eventosComerciales } from "@/lib/data";
 import { numero, pesos, fechaCorta } from "@/lib/format";
 import { useInventarioReal } from "@/lib/movimientos-supabase";
 import { indicadoresInventario } from "@/lib/indicadores";
-import { AsistenteInventario } from "@/components/AsistenteInventario";
+import { AccesoAsistenteIA } from "@/components/AccesoAsistenteIA";
 import { ArrowUpRight, Boxes, ArrowLeftRight, ChartNoAxesCombined } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -44,7 +44,7 @@ const FONDO_EVENTO: Record<string, string> = {
 
 function Dashboard() {
   const auth = useAuth();
-  const compras = useCompras(auth.rol === "administrador");
+  const compras = useCompras(Boolean(auth.rol), auth.user?.id, auth.rol);
   const [categoria, setCategoria] = useState("Todas");
   const { estado: carga, recargar } = useInventarioReal();
   const todos = carga.tipo === "listo" ? carga.productos.filter(p => p.activo !== false) : [];
@@ -248,7 +248,7 @@ function Dashboard() {
           </div>
         </Panel>
       </section>
-      <AsistenteInventario compacto/>
+      <AccesoAsistenteIA compacto />
       <section className="grid gap-4 lg:grid-cols-2">
         <Panel className="p-5"><h2 className="font-display font-semibold">Últimos movimientos</h2><ul className="mt-3 divide-y divide-line">{movimientos.slice(0,8).map(m => <li key={m.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span>{productos.find(p => p.id === m.productoId)?.nombre ?? `Producto #${m.productoId}`}</span><Etiqueta tono={m.tipo === "entrada" ? "teal" : "rose"}>{etiquetaMovimiento(m)} · {m.cantidad} u.</Etiqueta></div><p className="mt-1 text-xs text-ink-faint">{m.usuario} · {fechaCorta(fechaColombia(m.fechaHora || m.fecha))}</p></li>)}</ul>{movimientos.length === 0 && <p className="mt-3 text-xs text-ink-faint">Sin movimientos registrados.</p>}<Link to="/movimientos" className="mt-3 inline-block text-xs text-brand">Ver historial →</Link></Panel>
         <Panel className="p-5"><h2 className="font-display font-semibold">Productos con mayor rotación</h2><ul className="mt-3 divide-y divide-line">{rotacion.filter(r => r.salidas > 0).slice(0,5).map(r => <li key={r.producto.id} className="flex justify-between gap-3 py-3 text-sm"><span>{r.producto.nombre}</span><span>{r.salidas} u.</span></li>)}</ul>{!rotacion.some(r => r.salidas > 0) && <p className="mt-3 text-xs text-ink-faint">Sin salidas este mes.</p>}{auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: "" }} className="mt-3 inline-block text-xs text-brand">Consultar órdenes de compra →</Link>}</Panel>
