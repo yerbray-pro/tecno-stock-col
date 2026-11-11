@@ -33,6 +33,7 @@ function Movimientos() {
   const auth = useAuth();
   const { estado, recargar, registrar, guardando } = useMovimientosSupabase();
   const productos = estado.tipo === "listo" ? estado.productos : [];
+  const productosActivos = productos.filter(p => p.activo !== false);
   const movimientos = estado.tipo === "listo" ? estado.movimientos : [];
   const [filtros, setFiltros] = useState<FiltrosHistorial>(FILTROS_VACIOS);
   const [pagina, setPagina] = useState(1);
@@ -84,7 +85,7 @@ function Movimientos() {
               );
             }}
           >
-            <fieldset disabled={guardando || estado.tipo !== "listo" || productos.length === 0} className="space-y-3 disabled:opacity-60">
+            <fieldset disabled={guardando || estado.tipo !== "listo" || productosActivos.length === 0} className="space-y-3 disabled:opacity-60">
             <label className="block">
               <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-faint">
                 Producto
@@ -94,8 +95,8 @@ function Movimientos() {
                 onChange={(e) => setForm({ ...form, productoId: e.target.value })}
                 className="campo mt-1"
               >
-                {productos.length === 0 && <option value="">Sin productos disponibles</option>}
-                {productos.map((p) => (
+                {productosActivos.length === 0 && <option value="">Sin productos disponibles</option>}
+                {productosActivos.map((p) => (
                   <option key={p.id} value={p.id}>
                     {p.nombre} · {p.stock} u.
                   </option>
