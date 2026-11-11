@@ -13,7 +13,7 @@ import { estadoDeProducto, type Producto } from "@/lib/data";
 import { fechaCorta, pesos } from "@/lib/format";
 import { useQueryClient } from "@tanstack/react-query";
 import { CLAVE_INVENTARIO, useInventarioReal } from "@/lib/movimientos-supabase";
-import { crearProducto, editarProducto, validarProducto } from "@/lib/productos-supabase";
+import { crearProducto, editarProducto, validarProducto, cambiarEstadoProducto } from "@/lib/productos-supabase";
 import { useAuth } from "@/lib/auth";
 import { filtrarProductos, type FiltroProductos } from "@/lib/indicadores";
 import { paginar } from "@/lib/historial";
@@ -59,19 +59,38 @@ function Inventario() {
   const [seleccionado, setSeleccionado] = useState<string | null>(null);
   const [editando, setEditando] = useState<Producto | null>(null);
   const [formAbierto, setFormAbierto] = useState(false);
+  const [estadoRegistro, setEstadoRegistro] = useState<"Activos" | "Inactivos" | "Todos">("Activos");
+  const [confirmarCambio, setConfirmarCambio] = useState(false);
+  const [cambiandoEstado, setCambiandoEstado] = useState(false);
+  const [errorEstado, setErrorEstado] = useState<string | null>(null);
 
   const categorias = useMemo(
     () => ["Todas", ...Array.from(new Set(productos.map((p) => p.categoria)))],
     [productos],
   );
 
-  const lista = filtrarProductos(productos,{texto:busqueda,categoria,estado:estadoFiltro});
+  const lista = filtrarProductos(productos,{texto:busqueda,categoria,estado:estadoFiltro})
+    .filter(p => estadoRegistro === "Todos" || (estadoRegistro === "Activos" ? p.activo !== false : p.activo === false));
   const pag = paginar(lista,pagina,20);
 
   const detalle = productos.find((p) => p.id === seleccionado) ?? null;
   const historial = detalle
     ? movimientos.filter((m) => m.productoId === detalle.id).slice(0, 12)
     : [];
+
+  async function guardarEstado(p: Producto) {
+    if (cambiandoEstado || auth.rol !== "administrador") return;
+    setCambiandoEstado(true); setErrorEstado(null);
+    try {
+      const nuevoEstado = p.activo === false;
+      const r = await cambiarEstadoProducto(p.id, nuevoEstado);
+      if (!r.ok) { setErrorEstado(r.error); return; }
+      await queryClient.invalidateQueries({ queryKey: CLAVE_INVENTARIO });
+      setConfirmarCambio(false);
+      setAviso(nuevoEstado ? `«${p.nombre}» fue reactivado.` : `«${p.nombre}» fue inactivado. El historial sigue disponible.`);
+    } catch { setErrorEstado("No se pudo confirmar el cambio. Actualiza el inventario antes de repetirlo."); }
+    finally { setCambiandoEstado(false); }
+  }
 
   return (
     <AppShell
@@ -116,7 +135,7 @@ function Inventario() {
       )}
 
       <Panel className="p-4">
-        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto]">
+        <div className="grid gap-3 sm:grid-cols-[minmax(0,1fr)_auto_auto_auto]">
           <input
             value={busqueda}
             onChange={(e) => {setBusqueda(e.target.value);setPagina(1);}}
@@ -134,6 +153,10 @@ function Inventario() {
               <option key={c}>{c}</option>
             ))}
           </select>
+          <select aria-label="Estado de registro" className="campo" value={estadoRegistro}
+            onChange={e=>{setEstadoRegistro(e.target.value as "Activos"|"Inactivos"|"Todos");setPagina(1);setConfirmarCambio(false);}}>
+            <option>Activos</option><option>Inactivos</option><option>Todos</option>
+          </select>
           <select
             value={estadoFiltro}
             onChange={(e) => {setEstadoFiltro(e.target.value as FiltroProductos["estado"]);setPagina(1);}}
@@ -145,7 +168,7 @@ function Inventario() {
             ))}
           </select>
         </div>
-        <div className="mt-3 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-ink-faint">{lista.length} productos</span><BotonSuave onClick={()=>{setBusqueda("");setCategoria("Todas");setEstadoFiltro("Todos");setPagina(1);}}><ListFilter className="size-3.5"/>Limpiar filtros</BotonSuave></div>
+        <div className="mt-3 flex flex-wrap items-center justify-between gap-3"><span className="text-xs text-ink-faint">{lista.length} productos</span><BotonSuave onClick={()=>{setBusqueda("");setCategoria("Todas");setEstadoFiltro("Todos");setEstadoRegistro("Activos");setPagina(1);}}><ListFilter className="size-3.5"/>Limpiar filtros</BotonSuave></div>
       </Panel>
 
       <div className="grid gap-4 xl:grid-cols-3">
@@ -169,10 +192,10 @@ function Inventario() {
                   return (
                     <tr
                       key={p.id}
-                      onClick={() => setSeleccionado(p.id)}
+                      onClick={() => {setSeleccionado(p.id);setConfirmarCambio(false);setErrorEstado(null);}}
                       className={`cursor-pointer hover:bg-canvas/60 ${seleccionado === p.id ? "bg-brand/5" : ""}`}
                     >
-                      <td className="px-5 py-3 font-medium">{p.nombre}<p className="mt-1 text-xs font-normal text-ink-faint">#{p.id} · {p.modelo || p.marca}</p></td>
+                      <td className="px-5 py-3 font-medium">{p.nombre}{p.activo === false && <span className="ml-2 text-xs text-rose">Inactivo</span>}<p className="mt-1 text-xs font-normal text-ink-faint">#{p.id} · {p.modelo || p.marca}</p></td>
                       <td className="px-3 py-3 text-ink-soft">{p.categoria}</td>
                       <td className="px-3 py-3 text-ink-soft">{p.marca}</td>
                       <td className="px-3 py-3 text-right font-mono text-[13px]">{p.stock}</td>
@@ -238,7 +261,21 @@ function Inventario() {
               <BotonSuave onClick={() => setSeleccionado(null)}>Cerrar</BotonSuave>
             </div>
 
-            {auth.rol === "administrador" && <BotonSuave className="mt-3" onClick={() => { setEditando(detalle); setFormAbierto(false); }}>Editar producto</BotonSuave>}
+            {auth.rol === "administrador" && <div className="mt-3 flex flex-wrap gap-2">
+              <BotonSuave onClick={() => { setEditando(detalle); setFormAbierto(false); }}>Editar producto</BotonSuave>
+              <BotonSuave disabled={cambiandoEstado} onClick={()=>{setConfirmarCambio(true);setErrorEstado(null);}}>
+                {detalle.activo === false ? "Reactivar" : "Inactivar"}
+              </BotonSuave>
+            </div>}
+            {confirmarCambio && auth.rol === "administrador" && <div className="mt-3 space-y-2 rounded-lg border border-line p-3" role="group" aria-label="Confirmación de cambio de estado">
+              <p className="text-sm">{detalle.activo === false
+                ? "¿Reactivar este producto para permitir nuevas entradas, salidas y órdenes?"
+                : "¿Inactivar este producto? No podrá usarse en nuevas entradas, salidas ni órdenes. Su historial se conserva. Si tiene órdenes abiertas, la base impedirá inactivarlo."}</p>
+              <div className="flex gap-2"><BotonPrimario disabled={cambiandoEstado} onClick={()=>void guardarEstado(detalle)}>
+                {cambiandoEstado ? "Guardando…" : "Confirmar"}
+              </BotonPrimario><BotonSuave disabled={cambiandoEstado} onClick={()=>{setConfirmarCambio(false);setErrorEstado(null);}}>Cancelar</BotonSuave></div>
+            </div>}
+            {errorEstado && <p role="alert" className="mt-2 text-sm text-rose">{errorEstado}</p>
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <Dato titulo="Stock actual" valor={String(detalle.stock)} />
               <Dato titulo="Stock mínimo" valor={String(detalle.stockMinimo)} />
