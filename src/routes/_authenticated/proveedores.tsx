@@ -17,7 +17,7 @@ import { Orden, HistorialRecepciones } from "@/components/compras/Orden";
 const vacio = { empresa: "", contacto: "", telefono: "", correo: "", observaciones: "", activo: true };
 function Proveedores() {
   const auth = useAuth(); const cache = useQueryClient(); const query = useCompras(auth.rol === "administrador", auth.user?.id, auth.rol);
-  const { estado } = useInventarioReal(); const productos = estado.tipo === "listo" ? estado.productos : [];
+  const { estado } = useInventarioReal(); const productos = estado.tipo === "listo" ? estado.productos : []; const activos = productos.filter(p => p.activo !== false);
   const { producto } = Route.useSearch();
   const [proveedor, setProveedor] = useState<Omit<ProveedorReal, "id"> & { id?: string }>(vacio);
   const [cotizacion, setCotizacion] = useState({ proveedor_id: "", producto_id: producto, precio: "" });
@@ -62,7 +62,7 @@ function Proveedores() {
         <Panel className="space-y-3 p-5"><h2 className="font-display font-semibold">Cotización por proveedor</h2>
           <form className="space-y-3" onSubmit={e => { e.preventDefault(); void ejecutar("cotizacion", { ...cotizacion, precio: Number(cotizacion.precio) }); }}>
             <Campo titulo="Proveedor"><select required className="campo" value={cotizacion.proveedor_id} onChange={e => setCotizacion({ ...cotizacion, proveedor_id: e.target.value })}><option value="">Seleccionar</option>{proveedores.filter(p => p.activo).map(p => <option key={p.id} value={p.id}>{p.empresa}</option>)}</select></Campo>
-            <Campo titulo="Producto"><select required className="campo" value={cotizacion.producto_id} onChange={e => setCotizacion({ ...cotizacion, producto_id: e.target.value })}><option value="">Seleccionar</option>{productos.map(p => <option key={p.id} value={p.id}>{p.nombre} · {p.marca} {p.modelo} · #{p.id}</option>)}</select></Campo>
+            <Campo titulo="Producto"><select required className="campo" value={cotizacion.producto_id} onChange={e => setCotizacion({ ...cotizacion, producto_id: e.target.value })}><option value="">Seleccionar</option>{activos.map(p => <option key={p.id} value={p.id}>{p.nombre} · {p.marca} {p.modelo} · #{p.id}</option>)}</select></Campo>
             <Campo titulo="Precio cotizado (COP)"><input required type="number" min="0" step="0.01" className="campo" value={cotizacion.precio} onChange={e => setCotizacion({ ...cotizacion, precio: e.target.value })}/></Campo><BotonPrimario disabled={busy}>Guardar cotización</BotonPrimario>
           </form>
         </Panel>
