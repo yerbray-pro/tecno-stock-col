@@ -30,7 +30,8 @@ export function GraficoBarras({ serie, movimientos = [] }: { serie: SerieMes[]; 
   return (
     <div>
       <p className="mt-3 text-xs text-ink-faint">Selecciona un mes para explorar sus fechas. Las barras representan unidades de entradas y salidas registradas.</p>
-      <div className="mt-4 grid grid-cols-6 gap-1 sm:gap-3" role="group" aria-label="Movimientos por mes">
+      <div className="mt-4 max-w-full overflow-x-auto" role="region" aria-label="Meses de movimientos" tabIndex={0}>
+      <div className="grid min-w-[540px] grid-cols-6 gap-2 sm:min-w-0 sm:gap-3" role="group" aria-label="Movimientos por mes">
         {serie.map(s => {
           const [anio, mes] = s.clave.split("-").map(Number);
           const fin = new Date(Date.UTC(anio, mes, 0)).getUTCDate();
@@ -50,6 +51,7 @@ export function GraficoBarras({ serie, movimientos = [] }: { serie: SerieMes[]; 
             </button>
           );
         })}
+      </div>
       </div>
       {elegido && (
         <section className="mt-4 rounded-lg border border-line bg-canvas p-3" aria-label="Detalle diario del mes">
