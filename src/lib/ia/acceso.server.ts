@@ -26,12 +26,12 @@ export async function snapshotIA(client: Awaited<ReturnType<typeof clienteAdmini
     }
   }
   const [p,m]=await Promise.all([
-    leer("productos","id,nombre,categoria,cantidad,stock_minimo,marca,modelo,precio_compra,created_at"),
+    leer("productos","id,nombre,categoria,cantidad,stock_minimo,marca,modelo,precio_compra,created_at,activo"),
     leer("movimientos","id,producto_id,tipo,cantidad,fecha"),
   ]);
   if(p.some(f=>!/^\d+$/.test(String(f["id"])) || (typeof f["id"]==="number" && !Number.isSafeInteger(f["id"])) || !Number.isInteger(f["cantidad"]) || Number(f["cantidad"])<0 || !Number.isInteger(f["stock_minimo"]) || Number(f["stock_minimo"])<0)
     || m.some(f=>!Number.isInteger(f["cantidad"]) || Number(f["cantidad"])<=0 || !Number.isFinite(Date.parse(String(f["fecha"]))))) throw new Error("La base contiene indicadores inválidos. No se enviaron datos al modelo.");
-  const productos=p.map(filaAProducto); const movimientos=m.map(filaAMovimiento);
+  const productos=p.map(filaAProducto).filter(producto=>producto.activo!==false); const movimientos=m.map(filaAMovimiento);
   const indicadores=prepararIndicadoresIA(productos,movimientos);
   if(indicadores.length>50) throw new Error("Hay más de 50 productos. Se requiere ampliar el análisis por lotes antes de usar IA.");
   return {indicadores,firma:firmaInventario(productos,movimientos)};
