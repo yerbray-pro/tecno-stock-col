@@ -1,5 +1,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { rolDesdeBase } from "../auth-rules";
+import { responderConDatos } from "./respuestas-rapidas";
 
 type EntornoChat = { url?: string; publishableKey?: string; geminiKey?: string; model?: string };
 type HistorialChat = { role: "user" | "model"; text: string };
@@ -138,6 +139,16 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
       };
     }
 
+    // Respuestas simples, verificadas con datos reales y sin consumir la cuota Gemini.
+    // Las preguntas abiertas continúan en el modelo.
+    const respuestaRapida = responderConDatos(pregunta, productos, compras as {
+      disponible: boolean; ordenes?: { estado: string }[]
+    });
+    if (respuestaRapida) {
+      return Response.json({ respuesta: respuestaRapida, modelo: "datos-supabase" },
+        { headers: { "Cache-Control": "no-store" } });
+    }
+
     // El límite se aplica desde la base, no desde el navegador.
     const { error: cuotaError } = await client.rpc("ts_chat_reservar");
     if (cuotaError) {
@@ -188,13 +199,29 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
       },
     );
     if (!upstream.ok) {
+      // Se registra solamente estado, nombre de modelo y tipo de error.
+      // Nunca registrar clave, cabecera de autorización, prompt ni los datos privados.
+      let providerStatus = "desconocido";
+      try {
+        const info: unknown = await upstream.json();
+        const upstreamError = info && typeof info === "object" && "error" in info
+          ? (info as { error?: { status?: unknown } }).error : undefined;
+        if (typeof upstreamError?.status === "string") providerStatus = upstreamError.status.slice(0, 60);
+      } catch { /* Google no devolvió un error JSON estructurado. */ }
+      console.error("TecnoStock Gemini rechazó solicitud", {
+        status: upstream.status, tipo: providerStatus, modelo,
+      });
       if (upstream.status === 429)
-        return respuestaError("Gemini alcanzó su cuota gratuita. Intenta nuevamente más tarde.", 429);
+        return respuestaError("Gemini alcanzó el límite de solicitudes de Google. Prueba de nuevo más tarde; las consultas simples siguen disponibles.", 429);
+      if (upstream.status === 400)
+        return respuestaError("Gemini rechazó el formato de esta consulta. Prueba una pregunta más corta.", 502);
       if (upstream.status === 401 || upstream.status === 403)
-        return respuestaError("Google rechazó la clave de Gemini. Revisa la configuración del servidor.", 503);
+        return respuestaError("Google rechazó la clave o el acceso al modelo Gemini. Revisa GEMINI_API_KEY y sus permisos en Vercel.", 503);
       if (upstream.status === 404)
-        return respuestaError("El modelo Gemini seleccionado no está disponible para esta clave. Revisa GEMINI_MODEL.", 503);
-      return respuestaError("Gemini no pudo responder en este momento.", 502);
+        return respuestaError("Este modelo Gemini no está disponible para la clave. Revisa GEMINI_MODEL.", 503);
+      if (upstream.status === 500 || upstream.status === 502 || upstream.status === 503 || upstream.status === 504)
+        return respuestaError("El servicio Gemini está temporalmente ocupado o no disponible. Las consultas rápidas de inventario y pedidos siguen funcionando.", 503);
+      return respuestaError(`Gemini rechazó la solicitud (HTTP ${upstream.status}). Revisa los registros de Vercel.`, 502);
     }
     const result = await upstream.json() as {
       candidates?: { content?: { parts?: { text?: string }[] } }[]
