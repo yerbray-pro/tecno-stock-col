@@ -5,8 +5,9 @@ import { supabase } from "@/lib/supabase";
 
 type Mensaje = { role: "user" | "model"; text: string };
 const PREGUNTAS = [
+  "¿Qué promociones están activas?",
   "¿Cuántos audífonos hay?",
-  "¿Qué productos están agotados?",
+  "¿Quién hizo el último movimiento?",
   "¿Hay órdenes pendientes?",
 ];
 
