@@ -19,7 +19,11 @@ const base: DatosConsulta = {
     { id:"ord-123456789", proveedor:"Mayorista", estado:"Pendiente",
       fecha:"2026-11-11T10:00:00Z",
       items:[{productoId:"3",producto:"Audífonos",cantidadPedida:6,recibidas:2,pendientes:4}] },
-  ], cotizaciones:[
+  ], recepcionesDisponible:true, recepciones:[{
+    clave:"r-123", ordenId:"ord-123456789", proveedor:"Mayorista",
+    fecha:"2026-11-11T14:30:00Z", responsable:"Sebastian Valencia",
+    items:[{productoId:"3",producto:"Audífonos",cantidad:2,movimientoId:"42"}],
+  }], cotizaciones:[
     { productoId:"3",proveedorId:"p1",proveedor:"Distribuciones",precio:28000,activo:true },
     { productoId:"3",proveedorId:"p2",proveedor:"Mayorista",precio:25000,activo:true },
     { productoId:"3",proveedorId:"p3",proveedor:"Inactivo",precio:10000,activo:false },
@@ -79,6 +83,29 @@ describe("consultas directas verificables del chatbot TecnoStock",()=>{
     expect(r).toContain("$90.000");
     expect(r).toContain("$72.000");
     expect(r).not.toContain("$25.000");
+  });
+  it("cuenta entradas y salidas hoy sin llamar a Gemini",()=>{
+    const r=responderConsultasReales("¿Cuántas entradas registramos hoy?",base,"2026-11-11");
+    expect(r).toContain("Entradas: 1 registros, 3 unidades");
+    expect(r).toContain("Salidas: 1 registros, 1 unidades");
+    expect(r).toContain("TS-QA Ultra");
+  });
+  it("informa recepción parcial con fecha y responsable",()=>{
+    const r=preguntar("¿Cuándo recibimos los audífonos?");
+    expect(r).toContain("Sebastian Valencia");
+    expect(r).toContain("Mayorista");
+    expect(r).toContain("+2 u.");
+  });
+  it("describe las cantidades pendientes y el historial de llegada de la orden",()=>{
+    const r=preguntar("¿Hay órdenes abiertas?");
+    expect(r).toContain("2 de 6 unidades recibidas");
+    expect(r).toContain("4 pendientes");
+    expect(r).toContain("Sebastian Valencia");
+  });
+  it("indica cuando no hay fechas de recepción disponibles",()=>{
+    const datos={...base,compras:{...base.compras,recepcionesDisponible:false,recepciones:[]}};
+    const r=preguntar("¿Cuándo recibieron los audífonos?",datos);
+    expect(r).toContain("no está disponible");
   });
   it("no inventa el precio final cuando no existe precio público",()=>{
     const productos=base.productos.map(p=>({...p,precioVenta:null,precioFinal:null}));
