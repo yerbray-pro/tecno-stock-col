@@ -13,7 +13,7 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
   // A failed/uncertain receipt retains the exact key AND payload, including across reloads.
   const [intento, setIntento] = useState<null | { orden_id: string; clave: string; items: { producto_id: string; cantidad: number }[] }>(null);
   const [error, setError] = useState("");
-  const abierta = ["Enviada", "Parcialmente recibida"].includes(orden.estado);
+  const abierta = ["Pendiente", "Enviada", "Parcialmente recibida"].includes(orden.estado);
   const [restaurado, setRestaurado] = useState(false);
   useEffect(() => {
     try {

@@ -16,6 +16,7 @@ import { Route as AuthenticatedAnalisisRouteImport } from './routes/_authenticat
 import { Route as AuthenticatedInventarioRouteImport } from './routes/_authenticated/inventario'
 import { Route as AuthenticatedMovimientosRouteImport } from './routes/_authenticated/movimientos'
 import { Route as AuthenticatedProveedoresRouteImport } from './routes/_authenticated/proveedores'
+import { Route as AuthenticatedRecepcionesRouteImport } from './routes/_authenticated/recepciones'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
 import { Route as ApiInventarioIaRouteImport } from './routes/api/inventario-ia'
 
@@ -55,6 +56,12 @@ const AuthenticatedProveedoresRoute =
     path: '/proveedores',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
+const AuthenticatedRecepcionesRoute =
+  AuthenticatedRecepcionesRouteImport.update({
+    id: '/recepciones',
+    path: '/recepciones',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   id: '/usuarios',
   path: '/usuarios',
@@ -73,6 +80,7 @@ export interface FileRoutesByFullPath {
   '/inventario': typeof AuthenticatedInventarioRoute
   '/movimientos': typeof AuthenticatedMovimientosRoute
   '/proveedores': typeof AuthenticatedProveedoresRoute
+  '/recepciones': typeof AuthenticatedRecepcionesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/inventario-ia': typeof ApiInventarioIaRoute
 }
@@ -82,6 +90,7 @@ export interface FileRoutesByTo {
   '/inventario': typeof AuthenticatedInventarioRoute
   '/movimientos': typeof AuthenticatedMovimientosRoute
   '/proveedores': typeof AuthenticatedProveedoresRoute
+  '/recepciones': typeof AuthenticatedRecepcionesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/inventario-ia': typeof ApiInventarioIaRoute
   '/': typeof AuthenticatedIndexRoute
@@ -94,6 +103,7 @@ export interface FileRoutesById {
   '/_authenticated/inventario': typeof AuthenticatedInventarioRoute
   '/_authenticated/movimientos': typeof AuthenticatedMovimientosRoute
   '/_authenticated/proveedores': typeof AuthenticatedProveedoresRoute
+  '/_authenticated/recepciones': typeof AuthenticatedRecepcionesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
   '/api/inventario-ia': typeof ApiInventarioIaRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
@@ -107,6 +117,7 @@ export interface FileRouteTypes {
     | '/inventario'
     | '/movimientos'
     | '/proveedores'
+    | '/recepciones'
     | '/usuarios'
     | '/api/inventario-ia'
   fileRoutesByTo: FileRoutesByTo
@@ -116,6 +127,7 @@ export interface FileRouteTypes {
     | '/inventario'
     | '/movimientos'
     | '/proveedores'
+    | '/recepciones'
     | '/usuarios'
     | '/api/inventario-ia'
     | '/'
@@ -127,6 +139,7 @@ export interface FileRouteTypes {
     | '/_authenticated/inventario'
     | '/_authenticated/movimientos'
     | '/_authenticated/proveedores'
+    | '/_authenticated/recepciones'
     | '/_authenticated/usuarios'
     | '/api/inventario-ia'
     | '/_authenticated/'
@@ -189,6 +202,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedProveedoresRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/recepciones': {
+      id: '/_authenticated/recepciones'
+      path: '/recepciones'
+      fullPath: '/recepciones'
+      preLoaderRoute: typeof AuthenticatedRecepcionesRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/usuarios': {
       id: '/_authenticated/usuarios'
       path: '/usuarios'
@@ -211,6 +231,7 @@ interface AuthenticatedRouteRouteChildren {
   AuthenticatedInventarioRoute: typeof AuthenticatedInventarioRoute
   AuthenticatedMovimientosRoute: typeof AuthenticatedMovimientosRoute
   AuthenticatedProveedoresRoute: typeof AuthenticatedProveedoresRoute
+  AuthenticatedRecepcionesRoute: typeof AuthenticatedRecepcionesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
   AuthenticatedIndexRoute: typeof AuthenticatedIndexRoute
 }
@@ -220,6 +241,7 @@ const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedInventarioRoute: AuthenticatedInventarioRoute,
   AuthenticatedMovimientosRoute: AuthenticatedMovimientosRoute,
   AuthenticatedProveedoresRoute: AuthenticatedProveedoresRoute,
+  AuthenticatedRecepcionesRoute: AuthenticatedRecepcionesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
   AuthenticatedIndexRoute: AuthenticatedIndexRoute,
 }
