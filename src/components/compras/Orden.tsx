@@ -53,7 +53,20 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
     timeZone: "America/Bogota", dateStyle: "medium", timeStyle: "short",
   });
   const pagado = items.reduce((acc, i) => acc + i.recibida * (i.precio_unitario ?? 0), 0);
+  const solicitadas = items.reduce((acc,i)=>acc+i.cantidad,0);
+  const unidadesRecibidas = items.reduce((acc,i)=>acc+i.recibida,0);
+  const progreso = solicitadas > 0 ? Math.round(100 * unidadesRecibidas / solicitadas) : 0;
   return <Panel className="space-y-3 p-5"><div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-medium">Orden {orden.id.slice(0,8)} · {empresa}</h3><p className="text-xs text-ink-faint">Creada el {fechaCreacion} · {orden.estado}</p></div><Etiqueta>{orden.estado}</Etiqueta></div>
+    <div className="space-y-1.5 rounded-lg bg-canvas p-3">
+      <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
+        <span className="font-medium">{unidadesRecibidas} de {solicitadas} unidades recibidas</span>
+        <span className="text-ink-soft">Pendientes: {Math.max(0,solicitadas-unidadesRecibidas)} u. · {progreso}% completado</span>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-line" role="progressbar"
+        aria-label={`Recepción de orden ${orden.id.slice(0,8)}`} aria-valuenow={progreso} aria-valuemin={0} aria-valuemax={100}>
+        <div className="h-full rounded-full bg-teal transition-[width]" style={{ width: `${progreso}%` }}/>
+      </div>
+    </div>
     <button type="button" onClick={() => setDetalles(v => !v)}
       className="rounded-lg border border-line px-3 py-2 text-xs text-brand"
       aria-expanded={detalles}>{detalles ? "Ocultar detalles de compra" : "Ver detalle de la orden"}</button>
