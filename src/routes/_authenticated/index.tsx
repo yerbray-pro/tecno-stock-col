@@ -5,6 +5,8 @@ import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useCompras } from "@/lib/compras";
 import { usePromociones } from "@/lib/promociones";
+import { precioPresentado } from "@/lib/precios-venta";
+import { ResumenInteligente } from "@/components/ResumenInteligente";
 import { GraficoBarras, LeyendaGrafico } from "@/components/GraficoBarras";
 import { fechaColombia } from "@/lib/analisis";
 import { estadoDeProducto, eventosComerciales } from "@/lib/data";
@@ -48,10 +50,12 @@ function Dashboard() {
   const compras = useCompras(Boolean(auth.rol), auth.user?.id, auth.rol);
   const promociones = usePromociones(Boolean(auth.rol), auth.user?.id, auth.rol);
   const campañasActivas = (promociones.data ?? []).filter(p => p.estado === "Activa");
+
   const [categoria, setCategoria] = useState("Todas");
   const { estado: carga, recargar } = useInventarioReal();
   const todos = carga.tipo === "listo" ? carga.productos.filter(p => p.activo !== false) : [];
   const productos = todos.filter(p => categoria === "Todas" || p.categoria === categoria);
+  const descuentosVigentes = todos.filter(p => precioPresentado(p, promociones.data ?? []).descuento > 0).length;
   const movimientos = carga.tipo === "listo" ? carga.movimientos.filter(m => productos.some(p => p.id === m.productoId)) : [];
   const resumen = indicadoresInventario(productos, movimientos);
   const { serie, unidades, bajos, rotacion } = resumen;
@@ -162,7 +166,7 @@ function Dashboard() {
               {promociones.isError ? "Promociones todavía no configuradas o no disponibles." : "No hay promociones activas en este momento."}
             </p>}
             {campañasActivas.slice(0,3).map(p => <p key={p.id} className="text-xs text-ink-soft">
-              <span className="font-semibold text-teal">{p.descuento_porcentaje}%</span> · {p.nombre} · {productos.find(x => Number(x.id) === Number(p.producto_id))?.nombre ?? "Producto"}
+              <span className="font-semibold text-teal">{p.descuento_porcentaje}%</span> · {p.nombre} · {(p.alcance ?? "producto") === "todos" ? "Toda la tienda" : (p.alcance ?? "producto") === "categoria" ? `Categoría ${p.categoria}` : productos.find(x => Number(x.id) === Number(p.producto_id))?.nombre ?? "Producto"}
             </p>)}
           </div>
         </Panel>
@@ -198,7 +202,7 @@ function Dashboard() {
                 </div>
                 <p className="mt-1.5 text-xs text-ink-soft">{r.mensaje}</p>
                 <p className="mt-2 text-[11px] text-ink-faint">
-                  Precio de compra: {pesos(r.producto.precioCompra)} c/u
+                  {auth.rol === "administrador" ? `Costo de compra: ${pesos(r.producto.precioCompra)} c/u` : "Consultar reposición con administrador"}
                 </p>
               </li>
             ))}
@@ -229,7 +233,7 @@ function Dashboard() {
                   <th className="px-3 py-2.5 font-medium">Categoría</th>
                   <th className="px-3 py-2.5 text-right font-medium">Stock</th>
                   <th className="px-3 py-2.5 text-right font-medium">Mín.</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Precio</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Precio de venta</th>
                   <th className="px-5 py-2.5 text-right font-medium">Estado</th>
                 </tr>
               </thead>
@@ -247,8 +251,16 @@ function Dashboard() {
                       <td className="px-3 py-3 text-right font-mono text-[13px] text-ink-faint">
                         {p.stockMinimo}
                       </td>
-                      <td className="px-3 py-3 text-right font-mono text-[13px]">
-                        {pesos(p.precioCompra)}
+                      <td className="px-3 py-3 text-right text-xs">
+                        {(() => {
+                          const precio = precioPresentado(p, promociones.data ?? []);
+                          return precio.final === null ? <span className="text-ink-faint">Sin configurar</span> :
+                            <div className="space-y-0.5">
+                              {precio.descuento > 0 && <p className="text-ink-faint line-through">{pesos(precio.base ?? 0)}</p>}
+                              <p className="font-semibold">{pesos(precio.final)}</p>
+                              {precio.descuento > 0 && <span className="font-semibold text-teal">-{precio.descuento}%</span>}
+                            </div>;
+                        })()}
                       </td>
                       <td className="px-5 py-3 text-right">
                         <Etiqueta tono={tonoEstado(estado)} punto>
@@ -263,7 +275,11 @@ function Dashboard() {
           </div>
         </Panel>
       </section>
-      <AccesoAsistenteIA compacto />
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AccesoAsistenteIA compacto />
+        <ResumenInteligente />
+      </div>
+      <p className="text-xs text-ink-faint">Promociones aplicables a productos activos: {descuentosVigentes}. Los descuentos se calculan sobre precios de venta configurados, nunca sobre costos de proveedores.</p>
       <section className="grid gap-4 lg:grid-cols-2">
         <Panel className="p-5"><h2 className="font-display font-semibold">Últimos movimientos</h2><ul className="mt-3 divide-y divide-line">{movimientos.slice(0,8).map(m => <li key={m.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span>{productos.find(p => p.id === m.productoId)?.nombre ?? `Producto #${m.productoId}`}</span><Etiqueta tono={m.tipo === "entrada" ? "teal" : "rose"}>{etiquetaMovimiento(m)} · {m.cantidad} u.</Etiqueta></div><p className="mt-1 text-xs text-ink-faint">{m.usuario} · {fechaCorta(fechaColombia(m.fechaHora || m.fecha))}</p></li>)}</ul>{movimientos.length === 0 && <p className="mt-3 text-xs text-ink-faint">Sin movimientos registrados.</p>}<Link to="/movimientos" className="mt-3 inline-block text-xs text-brand">Ver historial →</Link></Panel>
         <Panel className="p-5"><h2 className="font-display font-semibold">Productos con mayor rotación</h2><ul className="mt-3 divide-y divide-line">{rotacion.filter(r => r.salidas > 0).slice(0,5).map(r => <li key={r.producto.id} className="flex justify-between gap-3 py-3 text-sm"><span>{r.producto.nombre}</span><span>{r.salidas} u.</span></li>)}</ul>{!rotacion.some(r => r.salidas > 0) && <p className="mt-3 text-xs text-ink-faint">Sin salidas este mes.</p>}{auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: "" }} className="mt-3 inline-block text-xs text-brand">Consultar órdenes de compra →</Link>}</Panel>
