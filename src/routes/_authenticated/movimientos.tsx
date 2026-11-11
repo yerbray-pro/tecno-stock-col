@@ -3,10 +3,15 @@ import { useState } from "react";
 import { AppShell, BotonPrimario, BotonSuave, Etiqueta, Panel } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
 import { fechaCorta } from "@/lib/format";
+import { fechaColombia } from "@/lib/analisis";
 import { useMovimientosSupabase } from "@/lib/movimientos-supabase";
 import { FILTROS_VACIOS, filtrarHistorial, paginar, etiquetaMovimiento, type FiltrosHistorial } from "@/lib/historial";
 
 const POR_PAGINA = 20;
+const MOTIVOS_ENTRADA = ["Ingreso manual", "Reposición manual", "Devolución de cliente", "Ajuste de inventario", "Otro"] as const;
+const MOTIVOS_SALIDA = ["Venta", "Uso interno", "Producto dañado", "Devolución a proveedor", "Ajuste de inventario", "Emergencia", "Otro"] as const;
+const hoyColombia = () => fechaColombia(new Date().toISOString());
+
 
 export const Route = createFileRoute("/_authenticated/movimientos")({
   head: () => ({
@@ -44,11 +49,14 @@ function Movimientos() {
     productoId: "",
     tipo: "salida" as "entrada" | "salida",
     cantidad: "1",
-    fecha: "",
-    motivo: "",
+    fecha: hoyColombia(),
+    motivo: "Venta",
     observacion: "",
   });
 
+  const [fechaManual, setFechaManual] = useState(false);
+  const [motivoOtro, setMotivoOtro] = useState("");
+  const motivos = form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
   const lista = filtrarHistorial(movimientos, productos, filtros);
   const pag = paginar(lista, pagina, POR_PAGINA);
   const productoId = productosActivos.some(p => p.id === form.productoId) ? form.productoId : (productosActivos[0]?.id ?? "");
@@ -67,14 +75,22 @@ function Movimientos() {
               e.preventDefault();
               setAviso(null);
               const cantidad = Number(form.cantidad);
+              const motivo = form.motivo === "Otro" ? motivoOtro.trim() : form.motivo;
+              if (!motivo) { setAviso({ tipo: "error", texto: "Escribe el motivo del movimiento." }); return; }
               const r = await registrar({
                 productoId,
                 tipo: form.tipo,
                 cantidad,
-                fecha: form.fecha,
-                motivo: form.motivo,
+                // Si no se escogió otra fecha, la BD guarda now() con la hora real.
+                fecha: fechaManual ? form.fecha : "",
+                motivo,
                 observacion: form.observacion,
               });
+              if (r.ok) {
+                setForm(prev => ({ ...prev, cantidad: "1", fecha: hoyColombia() }));
+                setFechaManual(false);
+                setMotivoOtro("");
+              }
               setAviso(
                 r.ok
                   ? {
@@ -108,7 +124,7 @@ function Movimientos() {
               <BotonSuave
                 type="button"
                 aria-pressed={form.tipo === "entrada"}
-                onClick={() => setForm({ ...form, tipo: "entrada" })}
+                onClick={() => { setForm({ ...form, tipo: "entrada", motivo: "Ingreso manual" }); setMotivoOtro(""); }}
                 className={`rounded-[10px] border px-3 py-2 text-sm font-medium transition-colors ${form.tipo === "entrada" ? "border-brand bg-brand/8 text-brand" : "border-line text-ink-soft hover:bg-canvas"}`}
               >
                 Entrada
@@ -116,7 +132,7 @@ function Movimientos() {
               <BotonSuave
                 type="button"
                 aria-pressed={form.tipo === "salida"}
-                onClick={() => setForm({ ...form, tipo: "salida" })}
+                onClick={() => { setForm({ ...form, tipo: "salida", motivo: "Venta" }); setMotivoOtro(""); }}
                 className={`rounded-[10px] border px-3 py-2 text-sm font-medium transition-colors ${form.tipo === "salida" ? "border-teal bg-teal/10 text-teal" : "border-line text-ink-soft hover:bg-canvas"}`}
               >
                 Salida
@@ -146,9 +162,10 @@ function Movimientos() {
               <input
                 type="date"
                 value={form.fecha}
-                onChange={(e) => setForm({ ...form, fecha: e.target.value })}
+                onChange={(e) => { setForm({ ...form, fecha: e.target.value }); setFechaManual(true); }}
                 className="campo mt-1"
               />
+              <p className="mt-1 text-[11px] text-ink-faint">Si no cambias la fecha, se guarda también la hora real del registro.</p>
             </label>
 
             <label className="block">
@@ -158,7 +175,18 @@ function Movimientos() {
               <input value={auth.nombre} readOnly className="campo mt-1" />
             </label>
 
-            <label className="block text-xs text-ink-soft">Motivo (opcional)<input className="campo mt-1" maxLength={500} value={form.motivo} onChange={e=>setForm({...form,motivo:e.target.value})}/></label>
+            <label className="block text-xs text-ink-soft">Motivo
+              <select className="campo mt-1" value={form.motivo}
+                onChange={e => { setForm({ ...form, motivo: e.target.value }); setMotivoOtro(""); }}>
+                {motivos.map(m => <option key={m} value={m}>{m}</option>)}
+              </select>
+            </label>
+            {form.motivo === "Otro" && <label className="block text-xs text-ink-soft">
+              Especificar motivo
+              <input className="campo mt-1" required maxLength={500} value={motivoOtro}
+                onChange={e => setMotivoOtro(e.target.value)}
+                placeholder="Escribe por qué se registra…" />
+            </label>
             <label className="block text-xs text-ink-soft">Observación (opcional)<textarea className="campo mt-1 min-h-20" maxLength={1000} value={form.observacion} onChange={e=>setForm({...form,observacion:e.target.value})}/></label>
             <BotonPrimario type="submit" className="w-full justify-center">
               {guardando ? "Guardando…" : "Registrar movimiento"}
