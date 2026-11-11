@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell, Panel, BotonPrimario, BotonSuave } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
@@ -41,7 +41,7 @@ function Promociones() {
     }));
   }
 
-  async function crear(e: React.FormEvent<HTMLFormElement>) {
+  async function crear(e: FormEvent<HTMLFormElement>) {
     e.preventDefault();
     if (cargando || auth.rol !== "administrador") return;
     const descuento = Number(form.descuento);
