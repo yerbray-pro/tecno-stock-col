@@ -30,6 +30,7 @@ export function filaAProducto(f: Fila): Producto {
     stockMinimo: num(leer(f, "stock_minimo", "stockMinimo", "stock_min")),
     precioCompra: num(leer(f, "precio_compra", "precioCompra", "precio")),
     registrado: texto(leer(f, "registrado", "created_at", "fecha_registro")).slice(0, 10),
+    activo: leer(f, "activo") !== false,
   };
 }
 
@@ -102,6 +103,20 @@ export async function editarProducto(p: Producto): Promise<{ ok: true } | { ok: 
   if (!supabase) return { ok: false, error: "La conexión no está configurada." };
   const { error } = await supabase.rpc("ts_guardar_producto", { p_datos: { id: p.id, nombre: p.nombre.trim(), categoria: p.categoria.trim(), marca: p.marca.trim(), modelo: p.modelo ?? "", stock_minimo: p.stockMinimo, precio_compra: p.precioCompra } });
   return error ? { ok: false, error: "No se pudo editar. Verifica permisos e instalación del SQL revisado; el stock no se modifica desde aquí." } : { ok: true };
+}
+
+/** Solo administrador: cambia estado sin eliminar el producto ni su historial. */
+export async function cambiarEstadoProducto(id: string, activo: boolean): Promise<{ok:true}|{ok:false;error:string}> {
+  if (!supabase) return {ok:false,error:"La conexión con Supabase no está configurada."};
+  const {error} = await supabase.rpc("ts_cambiar_estado_producto", {
+    p_producto_id: id, p_activo: activo,
+  });
+  if (error) {
+    if (error.code === "PGRST202" || error.code === "42883") return {ok:false,error:"Falta instalar el SQL de inactivación de productos."};
+    if (error.code === "42501") return {ok:false,error:"Solo administradores pueden cambiar el estado."};
+    return {ok:false,error:error.message || "No se pudo cambiar el estado."};
+  }
+  return {ok:true};
 }
 
 export function useProductosSupabase() {
