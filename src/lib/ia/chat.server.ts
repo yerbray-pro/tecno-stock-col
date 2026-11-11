@@ -224,7 +224,7 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
         id:p.id, nombre:p.nombre, categoria:p.categoria, stock:p.stock,
         minimo:p.minimo, precioVenta:p.precioVenta, precioFinal:p.precioFinal,
         descuento:p.descuento, campana:p.campana,
-        ...(role==="administrador" && "precioCompra" in p ? {costo:p.precioCompra} : {}),
+        ...(role==="administrador" && "precioCompra" in p && typeof p.precioCompra === "number" ? {costo:p.precioCompra} : {}),
       })),
       movimientos: movimientosDetalle,
       compras: {
