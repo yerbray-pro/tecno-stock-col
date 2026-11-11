@@ -275,7 +275,7 @@ function Inventario() {
                 {cambiandoEstado ? "Guardando…" : "Confirmar"}
               </BotonPrimario><BotonSuave disabled={cambiandoEstado} onClick={()=>{setConfirmarCambio(false);setErrorEstado(null);}}>Cancelar</BotonSuave></div>
             </div>}
-            {errorEstado && <p role="alert" className="mt-2 text-sm text-rose">{errorEstado}</p>
+            {errorEstado && <p role="alert" className="mt-2 text-sm text-rose">{errorEstado}</p>}
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <Dato titulo="Stock actual" valor={String(detalle.stock)} />
               <Dato titulo="Stock mínimo" valor={String(detalle.stockMinimo)} />
