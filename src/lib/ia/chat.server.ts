@@ -105,9 +105,6 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
       entradasHistoricas: entradas.get(p.id) ?? 0,
       salidasHistoricas: salidas.get(p.id) ?? 0,
     }));
-    const hoyColombia = new Intl.DateTimeFormat("en-CA", {
-      timeZone: "America/Bogota", year: "numeric", month: "2-digit", day: "2-digit",
-    }).format(new Date());
     const diaColombia = (fecha: string): string => {
       const d = new Date(fecha);
       if (!Number.isFinite(d.getTime())) return "";
@@ -117,6 +114,7 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
       const pick = (tipo: string) => partes.find(p => p.type === tipo)?.value ?? "";
       return `${pick("year")}-${pick("month")}-${pick("day")}`;
     };
+    const hoyColombia = diaColombia(new Date().toISOString());
     const movimientosHoy = movimientos.filter(m => diaColombia(texto(m.fecha)) === hoyColombia);
     const resumenHoy = {
       fecha: hoyColombia,
