@@ -58,9 +58,9 @@ export function AsistenteRapido() {
   if (pathname === "/asistente-ia") return null;
 
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex max-w-[calc(100vw-2rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
+    <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {abierto && (
-        <section aria-label="Chat rápido TecnoStock IA" className="flex h-[min(30rem,75vh)] w-[min(24rem,calc(100vw-2rem))] flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
+        <section aria-label="Chat rápido TecnoStock IA" className="flex h-[min(30rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-1.5rem))] min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
           <div className="flex items-center justify-between border-b border-line bg-canvas px-4 py-3">
             <div className="flex items-center gap-2">
               <Sparkles className="size-5 text-brand" />
@@ -111,7 +111,7 @@ export function AsistenteRapido() {
       <button type="button" aria-label={abierto ? "Cerrar asistente rápido" : "Abrir asistente rápido"}
         aria-expanded={abierto} title="Preguntar a TecnoStock IA"
         onClick={() => setAbierto(v => !v)}
-        className="flex items-center gap-2 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-white shadow-xl ring-2 ring-white/60 transition-transform hover:scale-[1.03]">
+        className="flex min-h-11 items-center gap-2 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-white shadow-xl ring-2 ring-white/60 transition-transform hover:scale-[1.03]">
         {abierto ? <X className="size-5" /> : <MessageCircleMore className="size-5" />}
         <span>{abierto ? "Cerrar" : "Preguntar a IA"}</span>
       </button>
