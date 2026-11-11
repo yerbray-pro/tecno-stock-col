@@ -42,6 +42,7 @@ function Movimientos() {
   const movimientos = estado.tipo === "listo" ? estado.movimientos : [];
   const [filtros, setFiltros] = useState<FiltrosHistorial>(FILTROS_VACIOS);
   const [pagina, setPagina] = useState(1);
+  const [ocultarPruebas, setOcultarPruebas] = useState(false);
   const cambiar = (c: Partial<FiltrosHistorial>) => { setFiltros((f) => ({ ...f, ...c })); setPagina(1); };
   const hayFiltros = JSON.stringify(filtros) !== JSON.stringify(FILTROS_VACIOS);
   const [aviso, setAviso] = useState<{ tipo: "ok" | "error"; texto: string } | null>(null);
@@ -57,7 +58,11 @@ function Movimientos() {
   const [fechaManual, setFechaManual] = useState(false);
   const [motivoOtro, setMotivoOtro] = useState("");
   const motivos = form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
-  const lista = filtrarHistorial(movimientos, productos, filtros);
+  // Solo ocultamos registros cuyo motivo u observación los marque como prueba.
+  // No asumimos que un movimiento de fecha antigua sea de demostración.
+  const marcadoDemo = (valor: string) => /\b(demo|prueba|simulacion|simulación)\b/i.test(valor);
+  const lista = filtrarHistorial(movimientos, productos, filtros).filter(m =>
+    !ocultarPruebas || !marcadoDemo([m.motivo,m.observacion].filter(Boolean).join(" ")));
   const pag = paginar(lista, pagina, POR_PAGINA);
   const productoId = productosActivos.some(p => p.id === form.productoId) ? form.productoId : (productosActivos[0]?.id ?? "");
   const nombre = (id: string) => productos.find((p) => p.id === id)?.nombre ?? "—";
@@ -242,6 +247,12 @@ function Movimientos() {
             </label>
             <BotonSuave disabled={!hayFiltros} onClick={() => cambiar(FILTROS_VACIOS)}>Limpiar filtros</BotonSuave>
           </div>
+          <label className="flex items-start gap-2 px-5 py-2 text-xs text-ink-soft">
+            <input type="checkbox" checked={ocultarPruebas}
+              onChange={e => {setOcultarPruebas(e.target.checked);setPagina(1);}}/>
+            <span>Ocultar movimientos identificados como «Demo», «Prueba» o «Simulación» en su motivo u observación.
+              Solo cambia esta vista: el historial y el inventario se conservan.</span>
+          </label>
           {estado.tipo === "listo" && lista.length === 0 && <p className="px-5 py-4 text-sm text-ink-faint">{hayFiltros ? "Ningún movimiento coincide con los filtros." : "No hay movimientos registrados."}</p>}
           <div className="max-h-[70vh] overflow-auto">
             <table className="w-full text-left text-sm">
