@@ -117,7 +117,7 @@ export async function handleChatIA(request: Request, env: EntornoChat): Promise<
     for (let offset = 0; offset < 5000; offset += 1000) {
       const { data, error } = await client.from("movimientos")
         .select("id,producto_id,tipo,cantidad,fecha,created_at,usuario_responsable,motivo,observacion")
-        .order("fecha", { ascending: false }).order("id", { ascending: false })
+        .order("created_at", { ascending: false }).order("id", { ascending: false })
         .range(offset, offset + 999);
       if (error) throw new Error("No pude leer los movimientos reales.");
       const lote = lista(data);
