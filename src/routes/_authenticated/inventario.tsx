@@ -13,7 +13,9 @@ import { estadoDeProducto, type Producto } from "@/lib/data";
 import { fechaCorta, pesos } from "@/lib/format";
 import { useQueryClient } from "@tanstack/react-query";
 import { CLAVE_INVENTARIO, useInventarioReal } from "@/lib/movimientos-supabase";
-import { crearProducto, editarProducto, validarProducto, cambiarEstadoProducto } from "@/lib/productos-supabase";
+import { crearProducto, editarProducto, validarProducto, cambiarEstadoProducto, actualizarPrecioVenta } from "@/lib/productos-supabase";
+import { usePromociones } from "@/lib/promociones";
+import { precioPresentado } from "@/lib/precios-venta";
 import { useAuth } from "@/lib/auth";
 import { filtrarProductos, type FiltroProductos } from "@/lib/indicadores";
 import { paginar } from "@/lib/historial";
@@ -44,6 +46,7 @@ function Inventario() {
   const auth = useAuth();
   const queryClient = useQueryClient();
   const { estado: carga, recargar } = useInventarioReal();
+  const promos = usePromociones(Boolean(auth.rol), auth.user?.id, auth.rol);
   const movimientos = carga.tipo === "listo" ? carga.movimientos : [];
   const crear = async (p: Parameters<typeof crearProducto>[0]) => {
     const r = await crearProducto(p);
@@ -63,6 +66,9 @@ function Inventario() {
   const [confirmarCambio, setConfirmarCambio] = useState(false);
   const [cambiandoEstado, setCambiandoEstado] = useState(false);
   const [errorEstado, setErrorEstado] = useState<string | null>(null);
+  const [precioEditando, setPrecioEditando] = useState(false);
+  const [nuevoPrecioVenta, setNuevoPrecioVenta] = useState("");
+  const [guardandoPrecio, setGuardandoPrecio] = useState(false);
 
   const categorias = useMemo(
     () => ["Todas", ...Array.from(new Set(productos.map((p) => p.categoria)))],
@@ -74,9 +80,28 @@ function Inventario() {
   const pag = paginar(lista,pagina,20);
 
   const detalle = productos.find((p) => p.id === seleccionado) ?? null;
+  const precioDetalle = detalle ? precioPresentado(detalle, promos.data ?? []) : null;
   const historial = detalle
     ? movimientos.filter((m) => m.productoId === detalle.id).slice(0, 12)
     : [];
+
+  async function guardarPrecio(p: Producto) {
+    if (guardandoPrecio || auth.rol !== "administrador") return;
+    const valor = nuevoPrecioVenta.trim() ? Number(nuevoPrecioVenta) : null;
+    if (valor !== null && (!Number.isFinite(valor) || valor < p.precioCompra || valor <= 0)) {
+      setErrorEstado("El precio de venta debe ser mayor o igual al costo y positivo.");
+      return;
+    }
+    setGuardandoPrecio(true); setErrorEstado(null);
+    try {
+      const res = await actualizarPrecioVenta(p.id, valor);
+      if (!res.ok) { setErrorEstado(res.error); return; }
+      await queryClient.invalidateQueries({queryKey: CLAVE_INVENTARIO});
+      setPrecioEditando(false);
+      setAviso("Precio de venta actualizado. El costo de compra no cambió.");
+    } catch { setErrorEstado("No se pudo confirmar el precio de venta."); }
+    finally { setGuardandoPrecio(false); }
+  }
 
   async function guardarEstado(p: Producto) {
     if (cambiandoEstado || auth.rol !== "administrador") return;
@@ -182,7 +207,8 @@ function Inventario() {
                   <th className="px-3 py-2.5 font-medium">Marca</th>
                   <th className="px-3 py-2.5 text-right font-medium">Stock</th>
                   <th className="px-3 py-2.5 text-right font-medium">Mín.</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Compra</th>
+                  {auth.rol === "administrador" && <th className="px-3 py-2.5 text-right font-medium">Costo</th>}
+                  <th className="px-3 py-2.5 text-right font-medium">Venta / descuento</th>
                   <th className="px-5 py-2.5 text-right font-medium">Estado</th>
                 </tr>
               </thead>
@@ -192,7 +218,7 @@ function Inventario() {
                   return (
                     <tr
                       key={p.id}
-                      onClick={() => {setSeleccionado(p.id);setConfirmarCambio(false);setErrorEstado(null);}}
+                      onClick={() => {setSeleccionado(p.id);setConfirmarCambio(false);setPrecioEditando(false);setErrorEstado(null);}}
                       className={`cursor-pointer hover:bg-canvas/60 ${seleccionado === p.id ? "bg-brand/5" : ""}`}
                     >
                       <td className="px-5 py-3 font-medium">{p.nombre}{p.activo === false && <span className="ml-2 text-xs text-rose">Inactivo</span>}<p className="mt-1 text-xs font-normal text-ink-faint">#{p.id} · {p.modelo || p.marca}</p></td>
@@ -202,8 +228,21 @@ function Inventario() {
                       <td className="px-3 py-3 text-right font-mono text-[13px] text-ink-faint">
                         {p.stockMinimo}
                       </td>
-                      <td className="px-3 py-3 text-right font-mono text-[13px]">
+                      {auth.rol === "administrador" && <td className="px-3 py-3 text-right font-mono text-[13px]">
                         {pesos(p.precioCompra)}
+                      </td>}
+                      <td className="px-3 py-3 text-right text-xs">
+                        {(() => {
+                          const precio = precioPresentado(p, promos.data ?? []);
+                          return precio.final === null ? <span className="text-ink-faint">Sin precio de venta</span> :
+                            <div className="space-y-0.5">
+                              {precio.descuento > 0 && <p className="text-ink-faint line-through">{pesos(precio.base ?? 0)}</p>}
+                              <p className="font-semibold text-ink">{pesos(precio.final)}</p>
+                              {precio.descuento > 0 && <span className="font-semibold text-teal">-{precio.descuento}%</span>}
+                              {auth.rol === "administrador" && precio.bajoCosto &&
+                                <p className="text-rose">Descuento inferior al costo</p>}
+                            </div>;
+                        })()}
                       </td>
                       <td className="px-5 py-3 text-right">
                         <Etiqueta tono={tonoEstado(estado)} punto>
@@ -216,14 +255,14 @@ function Inventario() {
                 {carga.tipo === "cargando" &&
                   [0, 1, 2, 3].map((i) => (
                     <tr key={`c${i}`}>
-                      <td colSpan={7} className="px-5 py-3">
+                      <td colSpan={auth.rol === "administrador" ? 8 : 7} className="px-5 py-3">
                         <div className="h-4 w-full animate-pulse rounded bg-canvas" />
                       </td>
                     </tr>
                   ))}
                 {carga.tipo === "error" && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-8 text-center text-sm">
+                    <td colSpan={auth.rol === "administrador" ? 8 : 7} className="px-5 py-8 text-center text-sm">
                       <p className="font-medium text-rose">No se pudieron cargar los productos.</p>
                       <p className="mt-1 text-xs text-ink-faint">{carga.mensaje}</p>
                       <div className="mt-3 flex justify-center">
@@ -234,7 +273,7 @@ function Inventario() {
                 )}
                 {carga.tipo === "listo" && lista.length === 0 && (
                   <tr>
-                    <td colSpan={7} className="px-5 py-8 text-center text-sm text-ink-faint">
+                    <td colSpan={auth.rol === "administrador" ? 8 : 7} className="px-5 py-8 text-center text-sm text-ink-faint">
                       {productos.length === 0
                         ? "Todavía no hay productos registrados en la base de datos."
                         : "No se encontraron productos con esos filtros."}
@@ -263,9 +302,24 @@ function Inventario() {
 
             {auth.rol === "administrador" && <div className="mt-3 flex flex-wrap gap-2">
               <BotonSuave onClick={() => { setEditando(detalle); setFormAbierto(false); }}>Editar producto</BotonSuave>
+              <BotonSuave onClick={() => {setPrecioEditando(true);setNuevoPrecioVenta(detalle.precioVenta?.toString() ?? "");setErrorEstado(null);}}>Precio de venta</BotonSuave>
               <BotonSuave disabled={cambiandoEstado} onClick={()=>{setConfirmarCambio(true);setErrorEstado(null);}}>
                 {detalle.activo === false ? "Reactivar" : "Inactivar"}
               </BotonSuave>
+            </div>}
+            {precioEditando && auth.rol === "administrador" && <div className="mt-3 space-y-2 rounded-lg border border-line bg-canvas p-3">
+              <label className="block text-xs text-ink-soft">Precio al público (COP)
+                <input className="campo mt-1" type="number" min={Math.max(detalle.precioCompra,0.01)} step="0.01"
+                  value={nuevoPrecioVenta} onChange={e=>setNuevoPrecioVenta(e.target.value)}
+                  placeholder="Ejemplo: 95000"/>
+              </label>
+              <p className="text-xs text-ink-faint">Costo: {pesos(detalle.precioCompra)}. El descuento se aplica al precio de venta.</p>
+              <div className="flex gap-2">
+                <BotonPrimario disabled={guardandoPrecio} onClick={()=>void guardarPrecio(detalle)}>
+                  {guardandoPrecio ? "Guardando…" : "Guardar precio"}
+                </BotonPrimario>
+                <BotonSuave disabled={guardandoPrecio} onClick={()=>setPrecioEditando(false)}>Cancelar</BotonSuave>
+              </div>
             </div>}
             {confirmarCambio && auth.rol === "administrador" && <div className="mt-3 space-y-2 rounded-lg border border-line p-3" role="group" aria-label="Confirmación de cambio de estado">
               <p className="text-sm">{detalle.activo === false
@@ -279,7 +333,9 @@ function Inventario() {
             <dl className="mt-4 grid grid-cols-2 gap-3 text-sm">
               <Dato titulo="Stock actual" valor={String(detalle.stock)} />
               <Dato titulo="Stock mínimo" valor={String(detalle.stockMinimo)} />
-              <Dato titulo="Precio de compra" valor={pesos(detalle.precioCompra)} />
+              {auth.rol === "administrador" && <Dato titulo="Costo de compra" valor={pesos(detalle.precioCompra)} />}
+              <Dato titulo="Precio de venta" valor={precioDetalle?.base == null ? "Sin configurar" : pesos(precioDetalle.base)} />
+              {precioDetalle && precioDetalle.descuento > 0 && <Dato titulo={`Promoción -${precioDetalle.descuento}%`} valor={pesos(precioDetalle.final ?? 0)} />}
               <Dato titulo="Registrado" valor={fechaCorta(detalle.registrado)} />
             </dl>
 
