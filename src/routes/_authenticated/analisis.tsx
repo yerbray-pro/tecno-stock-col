@@ -33,7 +33,7 @@ export const Route = createFileRoute("/_authenticated/analisis")({
 
 function Analisis() {
   const { estado: carga } = useInventarioReal();
-  const todos = carga.tipo === "listo" ? carga.productos : [];
+  const todos = carga.tipo === "listo" ? carga.productos.filter(p => p.activo !== false) : [];
   const [filtros, setFiltros] = useState<FiltroProductos>({ texto:"",categoria:"Todas",estado:"Todos",productoId:"" });
   const productos = filtrarProductos(todos,filtros);
   const movimientos = carga.tipo === "listo" ? carga.movimientos.filter(m=>productos.some(p=>p.id===m.productoId)) : [];
