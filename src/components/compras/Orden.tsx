@@ -86,5 +86,42 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
 }
 
 export function HistorialRecepciones({ data, nombre }: { data: Compras; nombre: (id: string | number) => string }) {
-  return <section className="space-y-3"><h2 className="font-display font-semibold">Historial de recepciones</h2>{!data.recepciones && <p role="alert" className="text-xs text-amber">Historial no disponible en la consulta de compras.</p>}{data.recepciones?.length === 0 && <p className="text-xs text-ink-faint">Sin recepciones registradas.</p>}{data.recepciones?.map(r => <article key={r.clave} className="rounded-lg border border-line p-4"><div className="flex flex-wrap justify-between gap-2 text-sm"><span>Orden {r.orden_id.slice(0,8)}</span><span className="text-xs text-ink-faint">{fechaCorta(r.created_at.slice(0,10))}</span></div><p className="mt-1 text-sm">Responsable: {r.usuario_responsable || "Nombre no disponible"}</p><p className="mt-1 break-all text-xs text-ink-faint">Referencia {r.clave}</p><ul className="mt-2 space-y-2">{data.recepcion_items?.filter(i => i.clave === r.clave).map(i => <li key={i.movimiento_id} className="text-sm">Entrada de {i.cantidad} u. de {nombre(i.producto_id)} — Recepción de proveedor · Movimiento #{i.movimiento_id}</li>)}</ul></article>)}</section>;
+  const auth = useAuth();
+  const admin = auth.rol === "administrador";
+  return <section className="space-y-3">
+    <h2 className="font-display font-semibold">Historial de recepciones</h2>
+    {!data.recepciones && <p role="alert" className="text-xs text-amber">Historial no disponible en la consulta de compras.</p>}
+    {data.recepciones?.length === 0 && <p className="text-xs text-ink-faint">Sin recepciones registradas.</p>}
+    {data.recepciones?.map(r => {
+      const orden = data.ordenes.find(o => o.id === r.orden_id);
+      const proveedor = data.proveedores.find(p => p.id === orden?.proveedor_id);
+      const lineas = data.recepcion_items?.filter(i => i.clave === r.clave) ?? [];
+      const detalle = lineas.map(i => ({
+        ...i, precio: data.items.find(l => l.orden_id === r.orden_id &&
+          String(l.producto_id) === String(i.producto_id))?.precio_unitario,
+      }));
+      const valor = detalle.every(i => i.precio !== undefined)
+        ? detalle.reduce((total,i) => total + i.cantidad * (i.precio ?? 0), 0) : null;
+      return <article key={r.clave} className="space-y-2 rounded-lg border border-line p-4">
+        <div className="flex flex-wrap justify-between gap-2 text-sm">
+          <span className="font-semibold">Proveedor: {proveedor?.empresa ?? "No identificado"} · Orden {r.orden_id.slice(0,8)}</span>
+          <span className="text-xs text-ink-faint">{new Date(r.created_at).toLocaleString("es-CO", {
+            timeZone: "America/Bogota", dateStyle: "medium", timeStyle: "short",
+          })}</span>
+        </div>
+        <p className="text-sm">Recibido por: <span className="font-medium">{r.usuario_responsable || "Nombre no disponible"}</span></p>
+        <p className="break-all text-xs text-ink-faint">Referencia {r.clave}</p>
+        <ul className="divide-y divide-line">{detalle.map(i => <li key={i.movimiento_id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
+          <span>{nombre(i.producto_id)} · <span className="font-medium">+{i.cantidad} u.</span></span>
+          {admin && <span className="text-xs text-ink-soft">
+            {i.precio === undefined ? "Costo no disponible" : `${pesos(i.precio)} c/u · Subtotal ${pesos(i.precio * i.cantidad)}`}
+          </span>}
+          <span className="w-full text-[11px] text-ink-faint">Movimiento #{i.movimiento_id}</span>
+        </li>)}</ul>
+        {admin && <p className="border-t border-line pt-2 text-right text-sm font-semibold">
+          Total de esta recepción: {valor === null ? "No disponible" : pesos(valor)}
+        </p>}
+      </article>;
+    })}
+  </section>;
 }
