@@ -66,7 +66,7 @@ function Usuarios() {
       {mensaje && <p role={mensaje.ok ? "status" : "alert"} className={`text-sm ${mensaje.ok ? "text-teal" : "text-rose"}`}>{mensaje.text}</p>}
     </section>
     <Panel className="overflow-x-auto">
-      <table className="w-full text-left text-sm"><thead><tr className="border-b border-line text-ink-faint"><th className="px-5 py-3">Nombre</th><th className="px-5 py-3">Correo</th><th className="px-5 py-3">Rol</th><th className="px-5 py-3">Acceso</th><th className="px-5 py-3">Acción</th></tr></thead>
+      <table className="w-full min-w-[700px] text-left text-sm"><thead><tr className="border-b border-line text-ink-faint"><th className="px-5 py-3">Nombre</th><th className="px-5 py-3">Correo</th><th className="px-5 py-3">Rol</th><th className="px-5 py-3">Acceso</th><th className="px-5 py-3">Acción</th></tr></thead>
       <tbody className="divide-y divide-line">
         {query.data?.map((u) => {
           const editable = puedeGestionar(auth.rol, auth.user?.id ?? "", u.id, u.principal);

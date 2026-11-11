@@ -226,7 +226,7 @@ function Dashboard() {
             </Link>
           </div>
           <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+            <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="border-b border-line text-[11px] uppercase tracking-wide text-ink-faint">
                   <th className="px-5 py-2.5 font-medium">Producto</th>

@@ -214,7 +214,7 @@ function Movimientos() {
               </h2>
               <p className="text-xs text-ink-faint">{estado.tipo === "listo" ? `${lista.length} registros` : "—"}</p>
             </div>
-            <div className="flex gap-1.5">
+            <div className="flex max-w-full flex-wrap gap-1.5">
               {(["todos", "entrada", "salida"] as const).map((f) => (
                 <BotonSuave
                   key={f}
@@ -243,8 +243,30 @@ function Movimientos() {
             <BotonSuave disabled={!hayFiltros} onClick={() => cambiar(FILTROS_VACIOS)}>Limpiar filtros</BotonSuave>
           </div>
           {estado.tipo === "listo" && lista.length === 0 && <p className="px-5 py-4 text-sm text-ink-faint">{hayFiltros ? "Ningún movimiento coincide con los filtros." : "No hay movimientos registrados."}</p>}
-          <div className="max-h-[70vh] overflow-auto">
-            <table className="w-full text-left text-sm">
+          <div className="max-h-[65vh] space-y-2 overflow-y-auto p-3 sm:hidden" aria-label="Historial de movimientos en móvil">
+            {pag.items.map(m => (
+              <article key={m.id} className="space-y-2 rounded-xl border border-line bg-panel p-3">
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-semibold">{nombre(m.productoId)}</p>
+                    <p className="text-xs text-ink-faint">Código {m.productoId} · {fechaCorta(m.fecha)}</p>
+                  </div>
+                  <Etiqueta tono={m.tipo === "entrada" ? "brand" : "teal"} punto>{etiquetaMovimiento(m)}</Etiqueta>
+                </div>
+                <div className="flex flex-wrap items-center justify-between gap-2 rounded-lg bg-canvas px-3 py-2">
+                  <span className="text-xs text-ink-soft">Cantidad registrada</span>
+                  <strong className="font-mono text-base">{m.tipo === "entrada" ? "+" : "−"}{m.cantidad} u.</strong>
+                </div>
+                <dl className="grid grid-cols-1 gap-1 text-xs">
+                  <div><dt className="inline text-ink-faint">Responsable: </dt><dd className="inline text-ink">{m.usuario}</dd></div>
+                  <div><dt className="inline text-ink-faint">Motivo: </dt><dd className="inline text-ink">{m.motivo || "—"}</dd></div>
+                  {m.observacion && <div className="break-words"><dt className="inline text-ink-faint">Observación: </dt><dd className="inline text-ink">{m.observacion}</dd></div>}
+                </dl>
+              </article>
+            ))}
+          </div>
+          <div className="hidden max-h-[70vh] min-w-0 overflow-auto sm:block" role="region" aria-label="Tabla de movimientos" tabIndex={0}>
+            <table className="w-full min-w-[820px] text-left text-sm">
               <thead className="sticky top-0 bg-panel">
                 <tr className="border-b border-line text-[11px] uppercase tracking-wide text-ink-faint">
                   <th className="px-5 py-2.5 font-medium">Producto</th>

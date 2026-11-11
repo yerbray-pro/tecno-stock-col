@@ -197,9 +197,38 @@ function Inventario() {
       </Panel>
 
       <div className="grid gap-4 xl:grid-cols-3">
-        <Panel className={detalle ? "xl:col-span-2" : "xl:col-span-3"}>
-          <div className="overflow-x-auto">
-            <table className="w-full text-left text-sm">
+        <Panel className={detalle ? "min-w-0 xl:col-span-2" : "min-w-0 xl:col-span-3"}>
+          <div className="space-y-2 p-3 sm:hidden" aria-label="Productos del inventario">
+            {pag.items.map(p => {
+              const estado = estadoDeProducto(p);
+              const precio = precioPresentado(p, promos.data ?? []);
+              return <button key={p.id} type="button"
+                onClick={() => { setSeleccionado(p.id);setConfirmarCambio(false);setPrecioEditando(false);setErrorEstado(null); }}
+                aria-label={`Ver detalle de ${p.nombre}`}
+                className={`w-full space-y-3 rounded-xl border p-3 text-left ${seleccionado === p.id ? "border-brand bg-brand/5" : "border-line bg-panel"}`}>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
+                    <p className="break-words text-sm font-semibold">{p.nombre}</p>
+                    <p className="mt-1 text-xs text-ink-faint">#{p.id} · {p.marca} · {p.modelo || p.categoria}</p>
+                  </div>
+                  <Etiqueta tono={tonoEstado(estado)} punto>{estado}</Etiqueta>
+                </div>
+                <div className="grid grid-cols-2 gap-2 rounded-lg bg-canvas p-2 text-xs">
+                  <div>Stock <strong className="block text-base text-ink">{p.stock} u.</strong></div>
+                  <div>Mínimo <strong className="block text-base text-ink">{p.stockMinimo} u.</strong></div>
+                  {auth.rol === "administrador" && <div>Costo <strong className="block text-sm text-ink">{pesos(p.precioCompra)}</strong></div>}
+                  <div>Venta <strong className="block text-sm text-ink">{precio.final === null ? "Sin configurar" : pesos(precio.final)}</strong></div>
+                </div>
+                {precio.descuento > 0 && <p className="text-xs font-medium text-teal">Promoción: -{precio.descuento}% · {precio.nombrePromocion}</p>}
+                <p className="text-right text-xs font-medium text-brand">Ver detalles y acciones →</p>
+              </button>;
+            })}
+            {carga.tipo === "cargando" && <p role="status" className="p-3 text-sm text-ink-soft">Cargando productos…</p>}
+            {carga.tipo === "error" && <p role="alert" className="p-3 text-sm text-rose">{carga.mensaje}</p>}
+            {carga.tipo === "listo" && lista.length === 0 && <p className="p-3 text-sm text-ink-soft">No se encontraron productos con esos filtros.</p>}
+          </div>
+          <div className="hidden min-w-0 overflow-x-auto sm:block" role="region" aria-label="Tabla de inventario" tabIndex={0}>
+            <table className="w-full min-w-[760px] text-left text-sm">
               <thead>
                 <tr className="border-b border-line text-[11px] uppercase tracking-wide text-ink-faint">
                   <th className="px-5 py-2.5 font-medium">Producto</th>
