@@ -26,5 +26,6 @@ export function usePromociones(habilitado: boolean, usuarioId?: string, rol?: st
       return Array.isArray(data) ? data as Promocion[] : [];
     },
     enabled: habilitado && Boolean(usuarioId), retry: false, staleTime: 25_000,
+    refetchInterval: 30_000, // campañas con fechas de vigencia y estados actualizados
   });
 }
