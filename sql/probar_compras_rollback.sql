@@ -12,6 +12,7 @@ BEGIN
  IF NOT public.ts_es_admin() THEN RAISE EXCEPTION 'Configurar UUID administrador autorizado'; END IF;
  v_producto:=public.ts_guardar_producto(jsonb_build_object('nombre','QA-'||gen_random_uuid()::text,'categoria','QA','marca','QA','modelo','Rollback','stock_inicial',0,'stock_minimo',2,'precio_compra',25000));
  v_proveedor:=(public.ts_compras('proveedor','{"empresa":"QA solo rollback"}'::jsonb)->>'id')::uuid;
+  PERFORM public.ts_compras('cotizacion',jsonb_build_object('proveedor_id',v_proveedor,'producto_id',v_producto::text,'precio',25000));
  SELECT cantidad INTO v_stock FROM public.productos WHERE id=v_producto;
  v_orden:=(public.ts_compras('crear_orden',jsonb_build_object('proveedor_id',v_proveedor,'items',jsonb_build_array(jsonb_build_object('producto_id',v_producto::text,'cantidad',10,'precio_unitario',25000))))->>'id')::uuid;
  SELECT cantidad INTO v_despues FROM public.productos WHERE id=v_producto;
