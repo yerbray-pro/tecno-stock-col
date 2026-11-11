@@ -111,7 +111,7 @@ export async function actualizarPrecioVenta(id: string, precioVenta: number | nu
   {ok:true} | {ok:false;error:string}
 > {
   if (!supabase) return {ok:false,error:"Supabase no está configurado."};
-  if (!/^\\d+$/.test(id) || (precioVenta !== null &&
+  if (!/^\d+$/.test(id) || (precioVenta !== null &&
     (!Number.isFinite(precioVenta) || precioVenta <= 0 || Math.round(precioVenta * 100) !== precioVenta * 100)))
     return {ok:false,error:"Indica un precio de venta válido, mayor a cero."};
   const { error } = await supabase.rpc("ts_actualizar_precio_venta", {
