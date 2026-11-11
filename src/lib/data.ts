@@ -10,6 +10,7 @@ export type Producto = {
   stockMinimo: number;
   precioCompra: number;
   registrado: string;
+  activo?: boolean;
 };
 
 export type Movimiento = {
