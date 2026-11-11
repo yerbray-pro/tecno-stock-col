@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { BotonPrimario, BotonSuave, Etiqueta, Panel } from "@/components/AppShell";
 import { recepcion, cantidadPendiente, validarPendientes, totalOrden, type OrdenReal, type ItemReal, type Compras } from "@/lib/compras";
 import { useAuth } from "@/lib/auth";
-import { fechaCorta, pesos } from "@/lib/format";
+import { pesos } from "@/lib/format";
 function Campo({ titulo, children }: { titulo: string; children: React.ReactNode }) { return <label className="block text-xs text-ink-soft">{titulo}<div className="mt-1">{children}</div></label>; }
 export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden: OrdenReal; items: ItemReal[]; empresa: string; nombre: (id: string | number) => string; busy: boolean; ejecutar: (a: string, d: Record<string, unknown>) => Promise<boolean> }) {
   const auth = useAuth();
@@ -57,7 +57,7 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
   const unidadesRecibidas = items.reduce((acc,i)=>acc+i.recibida,0);
   const progreso = solicitadas > 0 ? Math.round(100 * unidadesRecibidas / solicitadas) : 0;
   return <Panel className="space-y-3 p-5"><div className="flex flex-wrap justify-between gap-2"><div><h3 className="font-medium">Orden {orden.id.slice(0,8)} · {empresa}</h3><p className="text-xs text-ink-faint">Creada el {fechaCreacion} · {orden.estado}</p></div><Etiqueta>{orden.estado}</Etiqueta></div>
-    <div className="space-y-1.5 rounded-lg bg-canvas p-3">
+    {abierta && <div className="space-y-1.5 rounded-lg bg-canvas p-3">
       <div className="flex flex-wrap items-center justify-between gap-2 text-xs">
         <span className="font-medium">{unidadesRecibidas} de {solicitadas} unidades recibidas</span>
         <span className="text-ink-soft">Pendientes: {Math.max(0,solicitadas-unidadesRecibidas)} u. · {progreso}% completado</span>
@@ -66,7 +66,7 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
         aria-label={`Recepción de orden ${orden.id.slice(0,8)}`} aria-valuenow={progreso} aria-valuemin={0} aria-valuemax={100}>
         <div className="h-full rounded-full bg-teal transition-[width]" style={{ width: `${progreso}%` }}/>
       </div>
-    </div>
+    </div>}
     <button type="button" onClick={() => setDetalles(v => !v)}
       className="rounded-lg border border-line px-3 py-2 text-xs text-brand"
       aria-expanded={detalles}>{detalles ? "Ocultar detalles de compra" : "Ver detalle de la orden"}</button>
@@ -101,39 +101,91 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
 export function HistorialRecepciones({ data, nombre }: { data: Compras; nombre: (id: string | number) => string }) {
   const auth = useAuth();
   const admin = auth.rol === "administrador";
-  return <section className="space-y-3">
-    <h2 className="font-display font-semibold">Historial de recepciones</h2>
-    {!data.recepciones && <p role="alert" className="text-xs text-amber">Historial no disponible en la consulta de compras.</p>}
-    {data.recepciones?.length === 0 && <p className="text-xs text-ink-faint">Sin recepciones registradas.</p>}
-    {data.recepciones?.map(r => {
-      const orden = data.ordenes.find(o => o.id === r.orden_id);
-      const proveedor = data.proveedores.find(p => p.id === orden?.proveedor_id);
-      const lineas = data.recepcion_items?.filter(i => i.clave === r.clave) ?? [];
-      const detalle = lineas.map(i => ({
-        ...i, precio: data.items.find(l => l.orden_id === r.orden_id &&
-          String(l.producto_id) === String(i.producto_id))?.precio_unitario,
-      }));
-      const valor = detalle.every(i => i.precio !== undefined)
-        ? detalle.reduce((total,i) => total + i.cantidad * (i.precio ?? 0), 0) : null;
-      return <article key={r.clave} className="space-y-2 rounded-lg border border-line p-4">
-        <div className="flex flex-wrap justify-between gap-2 text-sm">
-          <span className="font-semibold">Proveedor: {proveedor?.empresa ?? "No identificado"} · Orden {r.orden_id.slice(0,8)}</span>
-          <span className="text-xs text-ink-faint">{new Date(r.created_at).toLocaleString("es-CO", {
-            timeZone: "America/Bogota", dateStyle: "medium", timeStyle: "short",
-          })}</span>
+  const recepciones = data.recepciones ?? [];
+  const grupos = Array.from(new Set(recepciones.map(r => r.orden_id))).map(ordenId => {
+    const entregas = recepciones.filter(r => r.orden_id === ordenId)
+      .sort((a,b) => Date.parse(a.created_at) - Date.parse(b.created_at));
+    const orden = data.ordenes.find(o => o.id === ordenId);
+    const proveedor = data.proveedores.find(p => p.id === orden?.proveedor_id);
+    return { ordenId, orden, proveedor, entregas, ultimaFecha: entregas.at(-1)?.created_at ?? "" };
+  }).sort((a,b) => Date.parse(b.ultimaFecha) - Date.parse(a.ultimaFecha));
+  const fechaRecepcion = (valor: string) => {
+    const fecha = new Date(valor);
+    return Number.isFinite(fecha.getTime()) ? fecha.toLocaleString("es-CO", {
+      timeZone: "America/Bogota", dateStyle: "medium", timeStyle: "short",
+    }) : "Fecha no disponible";
+  };
+
+  return <section className="space-y-4" aria-label="Historial de recepciones">
+    <div className="flex flex-wrap items-end justify-between gap-2">
+      <div>
+        <h2 className="font-display font-semibold">Historial de recepciones</h2>
+        <p className="mt-1 text-xs text-ink-faint">
+          Cada orden agrupa sus entregas y responsables. Se conservan las recepciones parciales y los registros anteriores.
+        </p>
+      </div>
+      <span className="rounded-full border border-line bg-panel px-3 py-1 text-xs text-ink-soft">
+        {grupos.length} {grupos.length === 1 ? "orden" : "órdenes"} · {recepciones.length} {recepciones.length === 1 ? "recepción" : "recepciones"}
+      </span>
+    </div>
+    {!data.recepciones && <p role="alert" className="rounded-lg border border-line p-4 text-xs text-amber">
+      El historial detallado no está disponible en la consulta de compras.
+    </p>}
+    {data.recepciones?.length === 0 && <Panel className="p-5"><p className="text-sm text-ink-faint">Todavía no hay recepciones registradas.</p></Panel>}
+    {grupos.map(grupo => {
+      const ordenRecibida = grupo.orden?.estado === "Recibida";
+      const totalUnidades = grupo.entregas.reduce((total,r) => total +
+        (data.recepcion_items ?? []).filter(i => i.clave === r.clave)
+          .reduce((s,i) => s + i.cantidad,0),0);
+      return <article key={grupo.ordenId} className="overflow-hidden rounded-xl border border-line bg-panel shadow-sm">
+        <header className="flex flex-wrap items-center justify-between gap-3 border-b border-line bg-canvas px-5 py-4">
+          <div className="space-y-1">
+            <h3 className="font-display text-sm font-semibold text-ink">
+              Orden #{grupo.ordenId.slice(0,8)} · {grupo.proveedor?.empresa ?? "Proveedor no disponible"}
+            </h3>
+            <p className="text-xs text-ink-soft">
+              {grupo.entregas.length} {grupo.entregas.length === 1 ? "entrega registrada" : "entregas registradas"} · {totalUnidades} unidades ingresadas
+            </p>
+          </div>
+          <Etiqueta tono={ordenRecibida ? "teal" : "amber"}>{grupo.orden?.estado ?? "Historial"}</Etiqueta>
+        </header>
+        <div className="space-y-3 p-4 sm:p-5">
+          {grupo.entregas.map((r,indice) => {
+            const lineas = (data.recepcion_items ?? []).filter(i => i.clave === r.clave);
+            const detalle = lineas.map(i => ({
+              ...i,
+              precio: data.items.find(l => l.orden_id === r.orden_id &&
+                String(l.producto_id) === String(i.producto_id))?.precio_unitario,
+            }));
+            const valor = detalle.every(i => i.precio !== undefined)
+              ? detalle.reduce((total,i) => total + i.cantidad * (i.precio ?? 0), 0) : null;
+            return <div key={r.clave} className="rounded-lg border border-line bg-panel p-4 shadow-sm">
+              <div className="mb-3 flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
+                <div>
+                  <p className="text-sm font-semibold">Recepción {indice + 1}</p>
+                  <p className="mt-1 text-xs text-ink-soft">Recibido por: <span className="font-medium text-ink">{r.usuario_responsable || "Nombre no disponible"}</span></p>
+                </div>
+                <p className="rounded-lg bg-canvas px-3 py-1.5 text-xs text-ink-soft">{fechaRecepcion(r.created_at)}</p>
+              </div>
+              <div className="space-y-2">
+                {detalle.map(i => <div key={i.movimiento_id} className="flex flex-wrap items-start justify-between gap-2 border-b border-line/60 pb-2 text-sm last:border-b-0 last:pb-0">
+                  <div>
+                    <p className="font-medium text-ink">{nombre(i.producto_id)} <span className="text-teal">+{i.cantidad} u.</span></p>
+                    <p className="mt-1 text-[11px] text-ink-faint">Movimiento #{i.movimiento_id}</p>
+                  </div>
+                  {admin && <div className="text-right text-xs text-ink-soft">
+                    <p>{i.precio === undefined ? "Costo no disponible" : pesos(i.precio) + " c/u"}</p>
+                    {i.precio !== undefined && <p className="mt-1 font-medium text-ink">Subtotal {pesos(i.precio * i.cantidad)}</p>}
+                  </div>}
+                </div>)}
+              </div>
+              {admin && <div className="mt-3 flex justify-end border-t border-line pt-3">
+                <p className="text-sm font-semibold">Total de la recepción: {valor === null ? "No disponible" : pesos(valor)}</p>
+              </div>}
+              <p className="mt-3 break-all text-[11px] text-ink-faint">Referencia de recepción: {r.clave}</p>
+            </div>;
+          })}
         </div>
-        <p className="text-sm">Recibido por: <span className="font-medium">{r.usuario_responsable || "Nombre no disponible"}</span></p>
-        <p className="break-all text-xs text-ink-faint">Referencia {r.clave}</p>
-        <ul className="divide-y divide-line">{detalle.map(i => <li key={i.movimiento_id} className="flex flex-wrap items-center justify-between gap-2 py-2 text-sm">
-          <span>{nombre(i.producto_id)} · <span className="font-medium">+{i.cantidad} u.</span></span>
-          {admin && <span className="text-xs text-ink-soft">
-            {i.precio === undefined ? "Costo no disponible" : `${pesos(i.precio)} c/u · Subtotal ${pesos(i.precio * i.cantidad)}`}
-          </span>}
-          <span className="w-full text-[11px] text-ink-faint">Movimiento #{i.movimiento_id}</span>
-        </li>)}</ul>
-        {admin && <p className="border-t border-line pt-2 text-right text-sm font-semibold">
-          Total de esta recepción: {valor === null ? "No disponible" : pesos(valor)}
-        </p>}
       </article>;
     })}
   </section>;
