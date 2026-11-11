@@ -13,7 +13,7 @@ import { estadoDeProducto, eventosComerciales } from "@/lib/data";
 import { numero, pesos, fechaCorta } from "@/lib/format";
 import { useInventarioReal } from "@/lib/movimientos-supabase";
 import { indicadoresInventario } from "@/lib/indicadores";
-import { AccesoAsistenteIA } from "@/components/AccesoAsistenteIA";
+
 import { ArrowUpRight, Boxes, ArrowLeftRight, ChartNoAxesCombined } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({
@@ -278,10 +278,7 @@ function Dashboard() {
           </div>
         </Panel>
       </section>
-      <div className="grid gap-4 lg:grid-cols-2">
-        <AccesoAsistenteIA compacto />
-        <ResumenInteligente />
-      </div>
+      <ResumenInteligente />
       <p className="text-xs text-ink-faint">Promociones aplicables a productos activos: {descuentosVigentes}. Sin precio de venta se muestra la campaña, pero no un precio final. Los descuentos nunca se calculan sobre costos de proveedores.</p>
       <section className="grid gap-4 lg:grid-cols-2">
         <Panel className="p-5"><h2 className="font-display font-semibold">Últimos movimientos</h2><ul className="mt-3 divide-y divide-line">{movimientos.slice(0,8).map(m => <li key={m.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span>{productos.find(p => p.id === m.productoId)?.nombre ?? `Producto #${m.productoId}`}</span><Etiqueta tono={m.tipo === "entrada" ? "teal" : "rose"}>{etiquetaMovimiento(m)} · {m.cantidad} u.</Etiqueta></div><p className="mt-1 text-xs text-ink-faint">{m.usuario} · {fechaCorta(fechaColombia(m.fechaHora || m.fecha))}</p></li>)}</ul>{movimientos.length === 0 && <p className="mt-3 text-xs text-ink-faint">Sin movimientos registrados.</p>}<Link to="/movimientos" className="mt-3 inline-block text-xs text-brand">Ver historial →</Link></Panel>
