@@ -1,3 +1,4 @@
+import { etiquetaMovimiento } from "@/lib/historial";
 import { createFileRoute } from "@tanstack/react-router";
 import { useMemo, useState } from "react";
 import {
@@ -253,7 +254,7 @@ function Inventario() {
                 <li key={m.id} className="flex items-center justify-between gap-3 py-2">
                   <div className="min-w-0">
                     <p className="text-sm">
-                      {m.tipo === "entrada" ? "Entrada" : "Salida"}{" "}
+                      {etiquetaMovimiento(m)}{" "}
                       <span className="font-mono text-[13px]">
                         {m.tipo === "entrada" ? "+" : "−"}
                         {m.cantidad}
