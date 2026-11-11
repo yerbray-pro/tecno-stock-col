@@ -234,7 +234,10 @@ function Inventario() {
                       <td className="px-3 py-3 text-right text-xs">
                         {(() => {
                           const precio = precioPresentado(p, promos.data ?? []);
-                          return precio.final === null ? <span className="text-ink-faint">Sin precio de venta</span> :
+                          return precio.final === null ? <div className="space-y-1">
+                            {precio.descuento > 0 && <span className="inline-block rounded-full bg-teal/10 px-2 py-1 font-semibold text-teal">-{precio.descuento}% · {precio.nombrePromocion}</span>}
+                            <p className="text-ink-faint">{precio.descuento > 0 ? "En promoción · falta precio de venta" : "Sin precio de venta"}</p>
+                          </div> :
                             <div className="space-y-0.5">
                               {precio.descuento > 0 && <p className="text-ink-faint line-through">{pesos(precio.base ?? 0)}</p>}
                               <p className="font-semibold text-ink">{pesos(precio.final)}</p>
@@ -335,6 +338,7 @@ function Inventario() {
               <Dato titulo="Stock mínimo" valor={String(detalle.stockMinimo)} />
               {auth.rol === "administrador" && <Dato titulo="Costo de compra" valor={pesos(detalle.precioCompra)} />}
               <Dato titulo="Precio de venta" valor={precioDetalle?.base == null ? "Sin configurar" : pesos(precioDetalle.base)} />
+              {precioDetalle && precioDetalle.descuento > 0 && precioDetalle.base == null && <p className="col-span-2 rounded-lg bg-amber/10 p-3 text-xs text-amber">Promoción activa: {precioDetalle.nombrePromocion} (−{precioDetalle.descuento}%). Define un precio de venta para calcular y mostrar el precio final.</p>}
               {precioDetalle && precioDetalle.descuento > 0 && <Dato titulo={`Promoción -${precioDetalle.descuento}%`} valor={pesos(precioDetalle.final ?? 0)} />}
               <Dato titulo="Registrado" valor={fechaCorta(detalle.registrado)} />
             </dl>
