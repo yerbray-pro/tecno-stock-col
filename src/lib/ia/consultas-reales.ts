@@ -183,7 +183,7 @@ export function responderConsultasReales(
 
   // 4. Fecha de llegada de mercancía y responsables: se obtiene de
   // ts_recepciones, no de la fecha de creación de la orden.
-  const pideRecepcion = /(recepci|recibid|recibieron|lleg|entreg|ingresaron|cuando ingreso|cuando entraron)/.test(q);
+  const pideRecepcion = /(recepci|recib|lleg|entreg|ingresaron|cuando ingreso|cuando entraron)/.test(q);
   const pideDetalleRecepcion = /(cuand|fecha|quien|responsable|hace cuanto|lleg|recibi|ingresaron)/.test(q);
   if (pideRecepcion && pideDetalleRecepcion) {
     if (!datos.compras.disponible) {
