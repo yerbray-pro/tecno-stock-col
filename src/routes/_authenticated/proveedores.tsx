@@ -3,7 +3,7 @@ import { useRef, useState } from "react";
 import { useQueryClient } from "@tanstack/react-query";
 import { AppShell, BotonPrimario, BotonSuave, Etiqueta, Panel } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
-import { CLAVE_COMPRAS, useCompras, operarCompras, nuevaOrden, precioCatalogo, totalOrden, filtrarOrdenes, type ProveedorReal } from "@/lib/compras";
+import { CLAVE_COMPRAS, useCompras, operarCompras, nuevaOrden, precioCatalogo, totalOrden, ordenesPorRecibir, type ProveedorReal } from "@/lib/compras";
 import { CLAVE_INVENTARIO, useInventarioReal } from "@/lib/movimientos-supabase";
 import { pesos } from "@/lib/format";
 
@@ -22,12 +22,12 @@ function Proveedores() {
   const [proveedor, setProveedor] = useState<Omit<ProveedorReal, "id"> & { id?: string }>(vacio);
   const [cotizacion, setCotizacion] = useState({ proveedor_id: "", producto_id: producto, precio: "" });
   const [comparar, setComparar] = useState(producto);
-  const [estadoOrden,setEstadoOrden]=useState("Todas");
   const [proveedorOrden, setProveedorOrden] = useState("");
   const [lineas, setLineas] = useState([{ producto_id: producto, cantidad: "1", precio_unitario: "" }]);
   const ocupado = useRef(false);
   const [busy, setBusy] = useState(false); const [mensaje, setMensaje] = useState<{ ok: boolean; text: string } | null>(null);
   const data = query.data; const proveedores = data?.proveedores ?? []; const catalogo = data?.catalogo ?? [];
+  const ordenesAbiertas = data ? ordenesPorRecibir(data.ordenes) : [];
   const nombre = (id: string | number) => productos.find(p => p.id === String(id))?.nombre ?? `Producto #${id}`;
   async function ejecutar(accion: string, datos: Record<string, unknown>): Promise<boolean> {
     if (ocupado.current) return false; ocupado.current = true; setBusy(true); setMensaje(null);
@@ -84,7 +84,17 @@ function Proveedores() {
           <div className="flex flex-wrap items-center gap-3"><BotonSuave type="button" onClick={() => setLineas([...lineas, { producto_id: "", cantidad: "1", precio_unitario: "" }])}>＋ Producto</BotonSuave><span className="text-sm">Total: {pesos(totalOrden(lineas.map(l => ({ cantidad: Number(l.cantidad), precio_unitario: precioCatalogo(catalogo, proveedorOrden, l.producto_id) }))) ?? 0)}</span><BotonPrimario disabled={busy} type="submit">Crear orden pendiente</BotonPrimario></div>
         </form>
       </section>
-      <section className="space-y-3"><div className="flex flex-wrap items-center justify-between gap-3"><h2 className="font-display font-semibold">Órdenes de compra</h2><select aria-label="Estado de órdenes" className="campo sm:max-w-64" value={estadoOrden} onChange={e=>setEstadoOrden(e.target.value)}>{["Todas","Pendiente","Enviada","Parcialmente recibida","Recibida","Cancelada"].map(e=><option key={e}>{e}</option>)}</select></div>{filtrarOrdenes(data.ordenes,estadoOrden).length === 0 && <p className="text-sm text-ink-faint">Sin órdenes para esta selección.</p>}{filtrarOrdenes(data.ordenes,estadoOrden).map(o => <Orden key={o.id} orden={o} items={data.items.filter(i => i.orden_id === o.id)} empresa={proveedores.find(p => p.id === o.proveedor_id)?.empresa ?? ""} nombre={nombre} busy={busy} ejecutar={ejecutar}/>)}</section>
+      <section className="space-y-3">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="font-display font-semibold">Órdenes por recibir</h2>
+            <p className="text-xs text-ink-faint">Pendientes, enviadas y parcialmente recibidas. Las recepciones anteriores se conservan en el historial inferior.</p>
+          </div>
+          <Etiqueta tono={ordenesAbiertas.length ? "amber" : "teal"}>{ordenesAbiertas.length} activas</Etiqueta>
+        </div>
+        {ordenesAbiertas.length === 0 && <Panel className="p-5"><p className="text-sm text-ink-soft">No hay órdenes pendientes de recepción. Consulta las órdenes completadas en el historial inferior.</p></Panel>}
+        {ordenesAbiertas.map(o => <Orden key={o.id} orden={o} items={data.items.filter(i => i.orden_id === o.id)} empresa={proveedores.find(p => p.id === o.proveedor_id)?.empresa ?? ""} nombre={nombre} busy={busy} ejecutar={ejecutar}/>)}
+      </section>
       <HistorialRecepciones data={data} nombre={nombre}/>
     </>}
   </AppShell>;
