@@ -1,5 +1,11 @@
 # TecnoStock: entrega y seguridad
 
+## Solicitud del 11 de noviembre: proveedores y recepciones
+- [ ] Separar administración /proveedores y recepción /recepciones para ambos roles, con datos reales compartidos.
+- [ ] Preparar SQL manual de roles, consulta limitada, precios de catálogo y recepción atómica/idempotente; no ejecutarlo.
+- [ ] Ampliar pruebas y documentar resultados, archivos y verificación real pendiente; sin publicar.
+- [ ] Verificar flujo persistente administrador/trabajador y Realtime. Bloqueado: tablas ts_ no instaladas, sin sesión externa disponible.
+
 ## Solicitud del 10 de noviembre: IA y presentación
 - [x] Confirmar main como rama sincronizada: confirmado por el usuario, sin cambiar Git ni producción.
 - [x] Implementar asistente IA administrativo, salida estricta y cuota duradera propuesta; llamada real de contrato válida con muestra técnica sintética.
