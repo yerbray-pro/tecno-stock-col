@@ -3,6 +3,7 @@ import { useEffect, useRef, useState } from "react";
 import { AppShell, Panel, BotonPrimario, BotonSuave } from "@/components/AppShell";
 import { useAuth } from "@/lib/auth";
 import { supabase } from "@/lib/supabase";
+import { primerNombre } from "@/lib/ia/personalizacion";
 
 export const Route = createFileRoute("/_authenticated/asistente-ia")({
   head: () => ({ meta: [{ title: "TecnoStock IA — Chat de inventario" },
@@ -22,6 +23,7 @@ const SUGERENCIAS = [
 ];
 function AsistenteIA() {
   const auth = useAuth();
+  const nombre = primerNombre(auth.nombre);
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
   const [pregunta, setPregunta] = useState("");
   const [enviando, setEnviando] = useState(false);
@@ -65,7 +67,7 @@ function AsistenteIA() {
 
       <div className="max-h-[55vh] min-h-64 space-y-4 overflow-y-auto pr-1" aria-live="polite">
         {mensajes.length === 0 && <div className="space-y-4">
-          <p className="text-sm text-ink-soft">¡Hola! Puedes preguntarme por las existencias, las entradas y salidas, productos agotados o las órdenes de proveedores. ¿Qué quieres saber?</p>
+          <p className="text-sm text-ink-soft">¡Hola{nombre ? `, ${nombre}` : ""}! 👋 ¿En qué puedo ayudarte hoy? Puedo consultar existencias, promociones, entradas, salidas y pedidos con datos de TecnoStock.</p>
           <p className="text-xs font-semibold text-ink-soft">Preguntas sugeridas</p>
           <div className="grid gap-2 sm:grid-cols-2">
             {SUGERENCIAS.map(q => <button type="button" key={q} disabled={enviando}
