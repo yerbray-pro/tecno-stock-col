@@ -51,7 +51,7 @@ function Movimientos() {
 
   const lista = filtrarHistorial(movimientos, productos, filtros);
   const pag = paginar(lista, pagina, POR_PAGINA);
-  const productoId = form.productoId || productos[0]?.id || "";
+  const productoId = productosActivos.some(p => p.id === form.productoId) ? form.productoId : (productosActivos[0]?.id ?? "");
   const nombre = (id: string) => productos.find((p) => p.id === id)?.nombre ?? "—";
 
   return (
