@@ -30,6 +30,10 @@ function Promociones() {
   const [cargando, setCargando] = useState(false);
   const [mensaje, setMensaje] = useState<{ ok:boolean; texto:string }|null>(null);
   const [confirmar, setConfirmar] = useState<{ id:number; nombre:string; habilitada:boolean }|null>(null);
+  const [mostrarHistorial, setMostrarHistorial] = useState(false);
+  const promocionesVisibles = consulta.data?.filter(p =>
+    auth.rol !== "administrador" || mostrarHistorial ||
+    p.estado === "Activa" || p.estado === "Programada") ?? [];
   const nombreProducto = (id: number) => productos.find(p => Number(p.id) === Number(id))?.nombre ?? `Producto #${id}`;
 
   function usarEvento(id: string) {
@@ -145,18 +149,24 @@ function Promociones() {
     <Panel className="overflow-x-auto">
       <div className="border-b border-line px-5 py-4">
         <h2 className="font-display font-semibold">Promociones registradas</h2>
-        <p className="text-xs text-ink-faint">{auth.rol==="administrador" ? "Incluye activas, programadas, finalizadas y desactivadas." : "Solo se muestran las promociones vigentes y habilitadas."}</p>
+        <p className="text-xs text-ink-faint">{auth.rol==="administrador" ? "Activas y programadas; el historial se conserva sin eliminar campañas." : "Solo se muestran las promociones vigentes y habilitadas."}</p>
+        {auth.rol === "administrador" && <label className="mt-3 inline-flex items-center gap-2 text-xs text-ink-soft">
+          <input type="checkbox" checked={mostrarHistorial} onChange={e=>setMostrarHistorial(e.target.checked)}/>
+          Mostrar también promociones finalizadas y desactivadas
+        </label>}
       </div>
       {consulta.isError && <div className="p-5"><p role="alert" className="text-sm text-rose">{consulta.error.message}</p><BotonSuave onClick={() => void consulta.refetch()}>Reintentar</BotonSuave></div>}
       {consulta.isPending && <p role="status" className="p-5 text-sm text-ink-soft">Consultando promociones…</p>}
-      {consulta.data?.length===0 && <p className="p-5 text-sm text-ink-faint">No hay promociones visibles. El administrador puede programar la primera.</p>}
-      {Boolean(consulta.data?.length) && <table className="w-full min-w-[670px] text-left text-sm">
+      {consulta.data && promocionesVisibles.length===0 && <p className="p-5 text-sm text-ink-faint">
+        No hay promociones para este filtro. Si eres administrador, activa «Mostrar también promociones finalizadas y desactivadas» para consultar el historial.
+      </p>}
+      {promocionesVisibles.length > 0 && <table className="w-full min-w-[670px] text-left text-sm">
         <thead><tr className="border-b border-line text-xs text-ink-faint">
           <th className="px-4 py-3">Campaña</th><th className="px-4 py-3">Aplicación</th>
           <th className="px-4 py-3">Descuento</th><th className="px-4 py-3">Vigencia</th>
           <th className="px-4 py-3">Estado</th>{auth.rol==="administrador" && <th className="px-4 py-3">Acción</th>}
         </tr></thead>
-        <tbody className="divide-y divide-line">{consulta.data?.map(p => (
+        <tbody className="divide-y divide-line">{promocionesVisibles.map(p => (
           <tr key={p.id}>
             <td className="px-4 py-3 font-medium">{p.nombre}</td>
             <td className="px-4 py-3">{(p.alcance ?? "producto")==="todos" ? "Toda la tienda" :
