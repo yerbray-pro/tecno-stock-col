@@ -254,7 +254,10 @@ function Dashboard() {
                       <td className="px-3 py-3 text-right text-xs">
                         {(() => {
                           const precio = precioPresentado(p, promociones.data ?? []);
-                          return precio.final === null ? <span className="text-ink-faint">Sin configurar</span> :
+                          return precio.final === null ? <div className="space-y-1">
+                            {precio.descuento > 0 && <span className="inline-block rounded-full bg-teal/10 px-2 py-1 font-semibold text-teal">-{precio.descuento}% · {precio.nombrePromocion}</span>}
+                            <p className="text-ink-faint">{precio.descuento > 0 ? "En promoción · sin precio público" : "Sin configurar"}</p>
+                          </div> :
                             <div className="space-y-0.5">
                               {precio.descuento > 0 && <p className="text-ink-faint line-through">{pesos(precio.base ?? 0)}</p>}
                               <p className="font-semibold">{pesos(precio.final)}</p>
@@ -279,7 +282,7 @@ function Dashboard() {
         <AccesoAsistenteIA compacto />
         <ResumenInteligente />
       </div>
-      <p className="text-xs text-ink-faint">Promociones aplicables a productos activos: {descuentosVigentes}. Los descuentos se calculan sobre precios de venta configurados, nunca sobre costos de proveedores.</p>
+      <p className="text-xs text-ink-faint">Promociones aplicables a productos activos: {descuentosVigentes}. Sin precio de venta se muestra la campaña, pero no un precio final. Los descuentos nunca se calculan sobre costos de proveedores.</p>
       <section className="grid gap-4 lg:grid-cols-2">
         <Panel className="p-5"><h2 className="font-display font-semibold">Últimos movimientos</h2><ul className="mt-3 divide-y divide-line">{movimientos.slice(0,8).map(m => <li key={m.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span>{productos.find(p => p.id === m.productoId)?.nombre ?? `Producto #${m.productoId}`}</span><Etiqueta tono={m.tipo === "entrada" ? "teal" : "rose"}>{etiquetaMovimiento(m)} · {m.cantidad} u.</Etiqueta></div><p className="mt-1 text-xs text-ink-faint">{m.usuario} · {fechaCorta(fechaColombia(m.fechaHora || m.fecha))}</p></li>)}</ul>{movimientos.length === 0 && <p className="mt-3 text-xs text-ink-faint">Sin movimientos registrados.</p>}<Link to="/movimientos" className="mt-3 inline-block text-xs text-brand">Ver historial →</Link></Panel>
         <Panel className="p-5"><h2 className="font-display font-semibold">Productos con mayor rotación</h2><ul className="mt-3 divide-y divide-line">{rotacion.filter(r => r.salidas > 0).slice(0,5).map(r => <li key={r.producto.id} className="flex justify-between gap-3 py-3 text-sm"><span>{r.producto.nombre}</span><span>{r.salidas} u.</span></li>)}</ul>{!rotacion.some(r => r.salidas > 0) && <p className="mt-3 text-xs text-ink-faint">Sin salidas este mes.</p>}{auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: "" }} className="mt-3 inline-block text-xs text-brand">Consultar órdenes de compra →</Link>}</Panel>
