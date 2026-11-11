@@ -128,7 +128,7 @@ function Dashboard() {
             </div>
             <LeyendaGrafico />
           </div>
-          <GraficoBarras serie={serie} />
+          <GraficoBarras serie={serie} movimientos={movimientos} />
         </Panel>
 
         <Panel className="p-5">
