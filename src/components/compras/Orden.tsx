@@ -73,7 +73,7 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
     {detalles && <div className="space-y-3 rounded-lg border border-line bg-canvas p-4">
       <p className="text-xs"><span className="font-semibold">Proveedor:</span> {empresa || "No identificado"} · <span className="font-semibold">Orden:</span> {orden.id}</p>
       <p className="text-xs"><span className="font-semibold">Fecha de creación:</span> {fechaCreacion}</p>
-      <table className="w-full text-left text-xs">
+      <div className="max-w-full overflow-x-auto"><table className="w-full min-w-[520px] text-left text-xs">
         <thead><tr className="border-b border-line"><th className="py-2">Producto</th><th className="py-2 text-right">Pedido</th><th className="py-2 text-right">Recibido</th>{admin && <><th className="py-2 text-right">Unitario</th><th className="py-2 text-right">Subtotal</th></>}</tr></thead>
         <tbody>{items.map(i => <tr className="border-b border-line" key={i.producto_id}>
           <td className="py-2">{nombre(i.producto_id)}</td>
@@ -82,7 +82,7 @@ export function Orden({ orden, items, empresa, nombre, busy, ejecutar }: { orden
           {admin && <><td className="py-2 text-right">{i.precio_unitario === undefined ? "Sin acceso" : pesos(i.precio_unitario)}</td>
             <td className="py-2 text-right">{i.precio_unitario === undefined ? "Sin acceso" : pesos(i.precio_unitario * i.cantidad)}</td></>}
         </tr>)}</tbody>
-      </table>
+      </table></div>
       {admin && <div className="space-y-1 text-right text-xs font-medium">
         <p>Total de la orden: {totalOrden(items) === undefined ? "No disponible" : pesos(totalOrden(items) ?? 0)}</p>
         {items.every(i => i.precio_unitario !== undefined) && <><p>Valor recibido: {pesos(pagado)}</p>
