@@ -2,6 +2,8 @@ import { useEffect, useRef, useState } from "react";
 import { Link, useRouterState } from "@tanstack/react-router";
 import { MessageCircleMore, X, Send, Sparkles, ExternalLink, LoaderCircle } from "lucide-react";
 import { supabase } from "@/lib/supabase";
+import { useAuth } from "@/lib/auth";
+import { primerNombre } from "@/lib/ia/personalizacion";
 
 type Mensaje = { role: "user" | "model"; text: string };
 const PREGUNTAS = [
@@ -13,6 +15,8 @@ const PREGUNTAS = [
 
 export function AsistenteRapido() {
   const pathname = useRouterState({ select: state => state.location.pathname });
+  const auth = useAuth();
+  const nombre = primerNombre(auth.nombre);
   const [abierto, setAbierto] = useState(false);
   const [pregunta, setPregunta] = useState("");
   const [mensajes, setMensajes] = useState<Mensaje[]>([]);
@@ -68,7 +72,7 @@ export function AsistenteRapido() {
           <div aria-live="polite" className="min-h-0 flex-1 space-y-3 overflow-y-auto px-4 py-4">
             {mensajes.length === 0 && (
               <div className="space-y-3">
-                <p className="text-sm text-ink-soft">¡Hola! ¿En qué te ayudo?</p>
+                <p className="text-sm text-ink-soft">¡Hola{nombre ? `, ${nombre}` : ""}! 👋 ¿En qué puedo ayudarte hoy?</p>
                 {PREGUNTAS.map(p => (
                   <button type="button" key={p} onClick={() => void preguntar(p)}
                     className="block w-full rounded-xl border border-line bg-canvas px-3 py-2.5 text-left text-xs text-ink-soft hover:border-brand hover:text-brand">
