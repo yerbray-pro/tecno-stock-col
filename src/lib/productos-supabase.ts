@@ -42,7 +42,7 @@ export type EstadoCarga =
 export type NuevoProducto = Omit<Producto, "id" | "registrado">;
 
 /** Nombres alternativos aceptados para cada campo (el primero es el preferido). */
-const COLUMNAS: Record<keyof NuevoProducto, string[]> = {
+const COLUMNAS: Record<Exclude<keyof NuevoProducto, "activo">, string[]> = {
   nombre: ["nombre", "name"],
   categoria: ["categoria", "category"],
   marca: ["marca", "brand"],
@@ -59,7 +59,7 @@ const COLUMNAS: Record<keyof NuevoProducto, string[]> = {
 export function construirFila(p: NuevoProducto, ejemplo?: Fila): Fila {
   const existentes = ejemplo ? Object.keys(ejemplo) : [];
   const fila: Fila = {};
-  for (const campo of Object.keys(COLUMNAS) as (keyof NuevoProducto)[]) {
+  for (const campo of Object.keys(COLUMNAS) as (Exclude<keyof NuevoProducto, "activo">)[]) {
     const opciones = COLUMNAS[campo];
     const col = opciones.find((c) => existentes.includes(c)) ?? (opciones[0] as string);
     fila[col] = p[campo];
