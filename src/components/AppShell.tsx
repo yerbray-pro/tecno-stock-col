@@ -9,6 +9,7 @@ const NAV = [
   { to: "/proveedores", icono: "▣", texto: "Proveedores" },
   { to: "/recepciones", icono: "⇩", texto: "Recepciones" },
   { to: "/analisis", icono: "∿", texto: "Análisis" },
+  { to: "/asistente-ia", icono: "✦", texto: "Asistente IA" },
 ] as const;
 
 export function AppShell({
