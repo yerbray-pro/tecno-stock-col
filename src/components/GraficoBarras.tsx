@@ -44,8 +44,9 @@ export function GraficoBarras({ serie, movimientos = [] }: { serie: SerieMes[]; 
                 <div className="w-3 rounded-t-sm bg-brand transition-all" style={{ height: `${(s.entradas / max) * 100}%` }}/>
                 <div className="w-3 rounded-t-sm bg-teal transition-all" style={{ height: `${(s.salidas / max) * 100}%` }}/>
               </div>
-              <span className="text-[10px] text-ink-faint sm:text-xs">{etiquetaMes(s.clave)}</span>
-              <span className="text-[10px] text-ink-soft">{s.entradas} / {s.salidas}</span>
+              <span className="text-[10px] font-medium text-ink-soft sm:text-xs">{etiquetaMes(s.clave).replace(/ (\d{2})$/, " 20$1")}</span>
+              <span className="text-[10px] text-ink-faint">Días 1–{fin}</span>
+              <span className="text-[10px] text-ink-soft">{s.entradas} E / {s.salidas} S</span>
             </button>
           );
         })}
