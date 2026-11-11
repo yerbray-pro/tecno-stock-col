@@ -13,8 +13,8 @@ export type PrecioPresentado = {
 /** No acumula campañas: utiliza el mayor descuento vigente aplicable. */
 export function precioPresentado(producto: Producto, promociones: Promocion[]): PrecioPresentado {
   const base = producto.precioVenta ?? null;
-  if (base === null || !Number.isFinite(base) || base <= 0)
-    return { base: null, final: null, descuento: 0, nombrePromocion: null, margenEstimado: null, bajoCosto: false };
+  // La promoción se identifica aunque aún no exista precio público.
+  // Nunca sustituir precio_compra por precio_venta.
   const aplicables = promociones.filter(p => p.estado === "Activa" && p.habilitada &&
     ((p.alcance ?? "producto") === "todos" ||
       ((p.alcance ?? "producto") === "categoria" && p.categoria === producto.categoria) ||
@@ -22,6 +22,10 @@ export function precioPresentado(producto: Producto, promociones: Promocion[]): 
   ).sort((a,b) => b.descuento_porcentaje - a.descuento_porcentaje || b.id-a.id);
   const elegida = aplicables[0];
   const porcentaje = elegida?.descuento_porcentaje ?? 0;
+  if (base === null || !Number.isFinite(base) || base <= 0) {
+    return {base:null,final:null,descuento:porcentaje,nombrePromocion:elegida?.nombre ?? null,
+      margenEstimado:null,bajoCosto:false};
+  }
   const final = Math.round(base * (100-porcentaje))/100;
   return {
     base,
