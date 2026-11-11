@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import type { Movimiento, Producto } from "./data";
-import { FILTROS_VACIOS, diaColombia, filtrarHistorial, paginar } from "./historial";
+import { FILTROS_VACIOS, diaColombia, filtrarHistorial, paginar, etiquetaMovimiento } from "./historial";
 
 const p = (id: string, nombre: string) => ({ id, nombre, categoria: "", marca: "", stock: 5, stockMinimo: 1, precioCompra: 0, registrado: "" }) as Producto;
 const m = (id: string, productoId: string, tipo: "entrada" | "salida", fechaHora: string) =>
@@ -14,6 +14,18 @@ const movs = [
 const ids = (r: Movimiento[]) => r.map((x) => x.id);
 
 describe("historial", () => {
+  it("distingue alta nueva, recepción de proveedor y entrada normal sin modificar el tipo", () => {
+    const inicial = { ...m("7", "7", "entrada", "2026-11-11T12:00:00Z"), motivo: "Existencias iniciales", observacion: "Alta de producto" };
+    const compra = { ...inicial, motivo: "Recepción de proveedor", observacion: "Orden abc" };
+    const manual = { ...inicial, motivo: "Ajuste", observacion: "Conteo físico" };
+    expect(etiquetaMovimiento(inicial)).toBe("Producto nuevo");
+    expect(etiquetaMovimiento(compra)).toBe("Recepción proveedor");
+    expect(etiquetaMovimiento(manual)).toBe("Entrada");
+    expect(etiquetaMovimiento({ ...inicial, observacion: "Ajuste" })).toBe("Entrada");
+    expect(etiquetaMovimiento({ ...inicial, tipo: "salida" })).toBe("Salida");
+    expect(inicial.tipo).toBe("entrada");
+  });
+
   it("busca por nombre sin tildes ni mayúsculas", () => {
     expect(ids(filtrarHistorial(movs, productos, { ...FILTROS_VACIOS, texto: "audifonos" }))).toEqual(["1", "3"]);
   });
