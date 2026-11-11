@@ -1,10 +1,34 @@
 import { describe, expect, it } from "vitest";
-import { nuevaOrden, recepcion, cantidadPendiente } from "./compras";
+import { nuevaOrden, recepcion, cantidadPendiente, filtrarOrdenes, puedeOperarCompras, precioCatalogo, totalOrden, validarPendientes } from "./compras";
 const id = "a51c85e1-69fc-42ab-a0cb-186fe3bda1e1";
 describe("Reglas de compras", () => {
-  it("permite múltiples productos reales sin duplicados", () => expect(nuevaOrden.safeParse({ proveedor_id: id, items: [{ producto_id: "1", cantidad: 2, precio_unitario: 25000 }, { producto_id: "2", cantidad: 1, precio_unitario: 30000 }] }).success).toBe(true));
-  it("rechaza repetir el mismo producto", () => expect(nuevaOrden.safeParse({ proveedor_id: id, items: Array(2).fill({ producto_id: "1", cantidad: 2, precio_unitario: 25000 }) }).success).toBe(false));
+  it("filtra pendientes sin incluir recibidas",()=>expect(filtrarOrdenes([{id,proveedor_id:id,estado:"Pendiente",created_at:"2026-11-10"},{id:"otra",proveedor_id:id,estado:"Recibida",created_at:"2026-11-10"}],"Pendiente").map(o=>o.id)).toEqual([id]));
+  it("permite múltiples productos reales sin duplicados", () => expect(nuevaOrden.safeParse({ proveedor_id: id, items: [{ producto_id: "1", cantidad: 2 }, { producto_id: "2", cantidad: 1 }] }).success).toBe(true));
+  it("rechaza repetir el mismo producto", () => expect(nuevaOrden.safeParse({ proveedor_id: id, items: Array(2).fill({ producto_id: "1", cantidad: 2 }) }).success).toBe(false));
   it("no acepta una recepción sin clave idempotente", () => expect(recepcion.safeParse({ orden_id: id, items: [{ producto_id: "1", cantidad: 2 }] }).success).toBe(false));
   it("recepción parcial de 4 de 10 deja 6 pendientes", () => expect(cantidadPendiente({ cantidad: 10, recibida: 4 })).toBe(6));
   it("no acepta cantidades fraccionarias", () => expect(recepcion.safeParse({ orden_id: id, clave: id, items: [{ producto_id: "1", cantidad: 1.5 }] }).success).toBe(false));
+  it("administrador puede crear órdenes", () => expect(puedeOperarCompras("administrador", "crear_orden")).toBe(true));
+  it("trabajador no puede crear órdenes", () => expect(puedeOperarCompras("trabajador", "crear_orden")).toBe(false));
+  it.each(["proveedor", "cotizacion", "estado"])("trabajador no puede ejecutar %s", accion => expect(puedeOperarCompras("trabajador", accion)).toBe(false));
+  it("trabajador puede confirmar recepciones", () => expect(puedeOperarCompras("trabajador", "recibir")).toBe(true));
+  it("trabajador puede consultar órdenes", () => expect(puedeOperarCompras("trabajador", "consultar")).toBe(true));
+  it("sin rol no puede recibir", () => expect(puedeOperarCompras(null, "recibir")).toBe(false));
+  it("rechaza precio enviado en una orden nueva", () => expect(nuevaOrden.safeParse({ proveedor_id: id, items: [{ producto_id: "1", cantidad: 4, precio_unitario: 1 }] }).success).toBe(false));
+  it("usa la cotización de la empresa seleccionada", () => expect(precioCatalogo([{ proveedor_id: id, producto_id: 1, precio: 25000 }, { proveedor_id: "otra", producto_id: 1, precio: 30000 }], id, "1")).toBe(25000));
+  it("cambio de proveedor no conserva el precio anterior", () => expect(precioCatalogo([{ proveedor_id: id, producto_id: 1, precio: 25000 }], "otra", "1")).toBeUndefined());
+  it("total de cuatro audífonos de 25.000 es 100.000", () => expect(totalOrden([{ cantidad: 4, precio_unitario: 25000 }])).toBe(100000));
+  it("suma subtotales sin perder centavos", () => expect(totalOrden([{ cantidad: 3, precio_unitario: 25000.1 }, { cantidad: 2, precio_unitario: 30000.2 }])).toBe(135000.7));
+  it("no presenta total cero cuando el trabajador no recibe precios", () => expect(totalOrden([{ cantidad: 4 }])).toBeUndefined());
+  it("acepta recibir 2 de 4", () => expect(validarPendientes([{ orden_id: id, producto_id: "1", cantidad: 4, recibida: 0 }], [{ producto_id: "1", cantidad: 2 }])).toBe(true));
+  it("recibir 2 de 4 deja 2 pendientes", () => expect(cantidadPendiente({ cantidad: 4, recibida: 2 })).toBe(2));
+  it("rechaza recibir 3 cuando quedan 2", () => expect(validarPendientes([{ orden_id: id, producto_id: "1", cantidad: 4, recibida: 2 }], [{ producto_id: "1", cantidad: 3 }])).toBe(false));
+  it("rechaza recibir productos ajenos a la orden", () => expect(validarPendientes([{ orden_id: id, producto_id: "1", cantidad: 4, recibida: 0 }], [{ producto_id: "2", cantidad: 1 }])).toBe(false));
+  it("rechaza producto duplicado en recepción", () => expect(recepcion.safeParse({ orden_id: id, clave: id, items: [{ producto_id: "1", cantidad: 2 }, { producto_id: "1", cantidad: 2 }] }).success).toBe(false));
+  it("un producto nuevo aparece al actualizar el catálogo", () => {
+    const catalogo = [{ proveedor_id: id, producto_id: "1", precio: 25000 }];
+    expect(precioCatalogo(catalogo, id, "2")).toBeUndefined();
+    catalogo.push({ proveedor_id: id, producto_id: "2", precio: 30000 });
+    expect(precioCatalogo(catalogo, id, "2")).toBe(30000);
+  });
 });

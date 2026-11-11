@@ -9,6 +9,16 @@ export type FiltrosHistorial = {
 
 export const FILTROS_VACIOS: FiltrosHistorial = { texto: "", tipo: "todos", desde: "", hasta: "" };
 
+/** Etiqueta visible del movimiento; el tipo contable permanece entrada/salida. */
+export function etiquetaMovimiento(m: Pick<Movimiento, "tipo" | "motivo" | "observacion">): string {
+  if (m.tipo === "salida") return "Salida";
+  if (m.motivo?.trim() === "Existencias iniciales" && m.observacion?.trim() === "Alta de producto") {
+    return "Producto nuevo";
+  }
+  if (m.motivo?.trim() === "Recepción de proveedor") return "Recepción proveedor";
+  return "Entrada";
+}
+
 const normalizar = (t: string) => t.normalize("NFD").replace(/[\u0300-\u036f]/g, "").toLowerCase().trim();
 
 /** Día calendario en Colombia de una fecha ISO (o AAAA-MM-DD). */

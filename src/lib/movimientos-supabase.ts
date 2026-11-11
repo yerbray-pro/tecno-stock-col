@@ -17,6 +17,7 @@ export function validarMovimiento(m: NuevoMovimiento, productos: Producto[]): st
   if (!/^\d+$/.test(m.productoId)) return "Selecciona un producto válido.";
   const producto = productos.find((p) => p.id === m.productoId);
   if (!producto) return "El producto ya no está disponible. Actualiza la lista.";
+  if (producto.activo === false) return "Producto inactivo. Reactívalo antes de registrar movimientos.";
   if (m.tipo !== "entrada" && m.tipo !== "salida") return "Selecciona Entrada o Salida.";
   if (!Number.isInteger(m.cantidad) || m.cantidad <= 0 || m.cantidad > 2147483647)
     return "La cantidad debe ser un número entero mayor que 0 dentro del rango permitido.";
@@ -110,7 +111,7 @@ async function leerInventario(): Promise<{ productos: Producto[]; movimientos: M
     }
   };
   const [p, m] = await Promise.all([
-    leerTodo("productos", "id,nombre,categoria,cantidad,stock_minimo,marca,modelo,precio_compra,created_at"),
+    leerTodo("productos", "*"),
     leerTodo("movimientos", "id,producto_id,tipo,cantidad,motivo,usuario_responsable,usuario_id,fecha,observacion,created_at"),
   ]);
   return {

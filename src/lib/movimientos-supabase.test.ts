@@ -6,6 +6,11 @@ const productos: Producto[] = [{ id: "12", nombre: "Cable", categoria: "Cables",
 const movimiento = { productoId: "12", tipo: "salida" as const, cantidad: 1, fecha: "2026-10-28" };
 
 describe("reglas de movimientos reales", () => {
+  it("bloquea entradas y salidas de un producto inactivo", () => {
+    const inactivos = productos.map(p => ({...p, activo:false}));
+    expect(validarMovimiento(movimiento, inactivos)).toContain("inactivo");
+    expect(validarMovimiento({...movimiento, tipo:"entrada"}, inactivos)).toContain("inactivo");
+  });
   it("rechaza cantidad cero", () => expect(validarMovimiento({ ...movimiento, cantidad: 0 }, productos)).not.toBeNull());
   it("rechaza cantidad negativa", () => expect(validarMovimiento({ ...movimiento, cantidad: -1 }, productos)).not.toBeNull());
   it("rechaza cantidad no entera", () => expect(validarMovimiento({ ...movimiento, cantidad: 1.5 }, productos)).not.toBeNull());

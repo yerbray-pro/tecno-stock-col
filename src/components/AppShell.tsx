@@ -1,13 +1,18 @@
 import { Link } from "@tanstack/react-router";
 import { useState, type ReactNode } from "react";
 import { useAuth } from "@/lib/auth";
+import { AsistenteRapido } from "./AsistenteRapido";
+import { CentroAlertas } from "./CentroAlertas";
 
 const NAV = [
   { to: "/", icono: "▦", texto: "Dashboard" },
   { to: "/inventario", icono: "▤", texto: "Inventario" },
   { to: "/movimientos", icono: "⇄", texto: "Movimientos" },
   { to: "/proveedores", icono: "▣", texto: "Proveedores" },
+  { to: "/recepciones", icono: "⇩", texto: "Recepciones" },
+  { to: "/promociones", icono: "%", texto: "Promociones" },
   { to: "/analisis", icono: "∿", texto: "Análisis" },
+  { to: "/asistente-ia", icono: "✦", texto: "Asistente IA" },
 ] as const;
 
 export function AppShell({
@@ -67,13 +72,14 @@ export function AppShell({
           <header className="sticky top-0 z-10 border-b border-line bg-canvas/85 backdrop-blur-sm">
             <div className="grid grid-cols-[minmax(0,1fr)_auto] items-center gap-3 px-4 py-3 sm:px-6">
               <div className="min-w-0">
-                <h1 className="truncate font-display text-lg font-semibold tracking-tight">
+                <h1 className="break-words font-display text-lg font-semibold">
                   {titulo}
                 </h1>
-                <p className="truncate text-xs text-ink-faint">{subtitulo}</p>
+                <p className="break-words text-xs text-ink-faint">{subtitulo}</p>
               </div>
               <div className="flex shrink-0 items-center gap-2.5">
                 {acciones}
+                <CentroAlertas />
                 <span title={auth.nombre} className="hidden max-w-32 truncate text-xs text-ink-soft lg:block">{auth.nombre}</span>
                 <BotonSuave disabled={leaving} onClick={async () => {
                   setLeaving(true); setSessionError("");
@@ -98,6 +104,7 @@ export function AppShell({
           </header>
 
           <main className="space-y-4 px-4 py-5 sm:px-6">{sessionError && <p role="alert" className="text-sm text-rose">{sessionError}</p>}{children}</main>
+          <AsistenteRapido />
         </div>
       </div>
     </div>

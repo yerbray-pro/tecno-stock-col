@@ -3,13 +3,22 @@
 -- Requiere registrar_movimiento(bigint,text,integer,timestamptz,text,text,text)
 -- SECURITY DEFINER, identity de sesión real, profiles.full_name y movimientos.usuario_id.
 -- No reemplaza registrar_movimiento. No inserta datos de ejemplo ni modifica datos existentes.
+-- Versión 11 noviembre: admin administra; admin/user consultan recepción y reciben.
+-- SOLO propuesta para instalación inicial (tablas ts_ ausentes); no ejecutar desde Lovable.
 BEGIN;
 -- Compatibilidad con user_roles.role o user_roles.rol, validada explícitamente.
 DO $$ BEGIN
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='profiles' AND column_name='full_name') THEN RAISE EXCEPTION 'Inspeccionar profiles.full_name'; END IF;
  IF NOT EXISTS(SELECT 1 FROM information_schema.columns WHERE table_schema='public' AND table_name='movimientos' AND column_name='usuario_id') THEN RAISE EXCEPTION 'Inspeccionar movimientos.usuario_id'; END IF;
  IF to_regprocedure('public.registrar_movimiento(bigint,text,integer,timestamp with time zone,text,text,text)') IS NULL THEN RAISE EXCEPTION 'Firma registrar_movimiento incompatible'; END IF;
+ IF NOT EXISTS(SELECT 1 FROM pg_proc p WHERE p.oid=to_regprocedure('public.registrar_movimiento(bigint,text,integer,timestamp with time zone,text,text,text)') AND p.prosecdef AND pg_get_userbyid(p.proowner)='postgres') THEN RAISE EXCEPTION 'Revisar SECURITY DEFINER y propietario de registrar_movimiento antes de instalar compras'; END IF;
+ IF to_regclass('public.user_roles') IS NULL THEN RAISE EXCEPTION 'Falta inspeccionar user_roles'; END IF;
 END $$;
+CREATE FUNCTION public.ts_puede_recibir() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
+ SELECT auth.uid() IS NOT NULL AND EXISTS(SELECT 1 FROM public.user_roles r JOIN auth.users u ON u.id=r.user_id WHERE r.user_id=auth.uid() AND coalesce(to_jsonb(r)->>'role',to_jsonb(r)->>'rol') IN ('admin','user') AND (u.banned_until IS NULL OR u.banned_until<=now()));
+$$;
+REVOKE ALL ON FUNCTION public.ts_puede_recibir() FROM PUBLIC,anon;
+GRANT EXECUTE ON FUNCTION public.ts_puede_recibir() TO authenticated;
 CREATE FUNCTION public.ts_es_admin() RETURNS boolean LANGUAGE sql STABLE SECURITY DEFINER SET search_path='' AS $$
  SELECT auth.uid() IS NOT NULL AND EXISTS(SELECT 1 FROM public.user_roles r JOIN auth.users u ON u.id=r.user_id WHERE r.user_id=auth.uid() AND coalesce(to_jsonb(r)->>'role',to_jsonb(r)->>'rol')='admin' AND (u.banned_until IS NULL OR u.banned_until<=now()));
 $$;
@@ -43,6 +52,7 @@ GRANT SELECT ON public.ts_ordenes TO authenticated;
 GRANT ALL ON public.ts_ordenes TO service_role;
 ALTER TABLE public.ts_ordenes ENABLE ROW LEVEL SECURITY;
 CREATE POLICY ts_orden_admin ON public.ts_ordenes FOR SELECT TO authenticated USING(public.ts_es_admin());
+CREATE POLICY ts_orden_receptor ON public.ts_ordenes FOR SELECT TO authenticated USING(public.ts_puede_recibir() AND estado<>'Cancelada');
 CREATE TABLE public.ts_orden_items (
  orden_id uuid NOT NULL REFERENCES public.ts_ordenes(id), producto_id bigint NOT NULL REFERENCES public.productos(id),
  cantidad integer NOT NULL CHECK(cantidad>0), recibida integer NOT NULL DEFAULT 0 CHECK(recibida>=0 AND recibida<=cantidad),
@@ -60,6 +70,7 @@ GRANT SELECT ON public.ts_recepciones TO authenticated;
 GRANT ALL ON public.ts_recepciones TO service_role;
 ALTER TABLE public.ts_recepciones ENABLE ROW LEVEL SECURITY;
 CREATE POLICY ts_recepcion_admin ON public.ts_recepciones FOR SELECT TO authenticated USING(public.ts_es_admin());
+CREATE POLICY ts_recepcion_receptor ON public.ts_recepciones FOR SELECT TO authenticated USING(public.ts_puede_recibir());
 CREATE TABLE public.ts_recepcion_items (
  clave uuid NOT NULL REFERENCES public.ts_recepciones(clave), producto_id bigint NOT NULL REFERENCES public.productos(id),
  cantidad integer NOT NULL CHECK(cantidad>0), movimiento_id bigint NOT NULL UNIQUE REFERENCES public.movimientos(id), PRIMARY KEY(clave,producto_id)
@@ -68,18 +79,30 @@ GRANT SELECT ON public.ts_recepcion_items TO authenticated;
 GRANT ALL ON public.ts_recepcion_items TO service_role;
 ALTER TABLE public.ts_recepcion_items ENABLE ROW LEVEL SECURITY;
 CREATE POLICY ts_recepcion_item_admin ON public.ts_recepcion_items FOR SELECT TO authenticated USING(public.ts_es_admin());
+CREATE POLICY ts_recepcion_item_receptor ON public.ts_recepcion_items FOR SELECT TO authenticated USING(public.ts_puede_recibir());
 -- No grants INSERT/UPDATE/DELETE to browser roles. All writes pass through role-validated RPC.
 CREATE FUNCTION public.ts_compras(p_accion text,p_datos jsonb DEFAULT '{}'::jsonb) RETURNS jsonb
 LANGUAGE plpgsql SECURITY DEFINER SET search_path='' AS $$
 DECLARE v_id uuid; v_clave uuid; v_item jsonb; v_orden public.ts_ordenes%ROWTYPE; v_linea public.ts_orden_items%ROWTYPE;
- v_estado text; v_producto bigint; v_cantidad integer; v_precio numeric; v_movimiento bigint; v_anterior public.ts_recepciones%ROWTYPE;
+  v_estado text; v_producto bigint; v_cantidad integer; v_precio numeric; v_movimiento bigint; v_anterior public.ts_recepciones%ROWTYPE; v_admin boolean;
 BEGIN
- IF NOT public.ts_es_admin() THEN RAISE EXCEPTION 'Solo administradores' USING ERRCODE='42501'; END IF;
+  v_admin:=public.ts_es_admin();
+  IF NOT public.ts_puede_recibir() THEN RAISE EXCEPTION 'Sesión no autorizada' USING ERRCODE='42501'; END IF;
+  IF NOT v_admin AND p_accion NOT IN ('consultar','recibir') THEN RAISE EXCEPTION 'Solo administradores' USING ERRCODE='42501'; END IF;
+  IF p_accion='consultar' AND NOT v_admin THEN RETURN jsonb_build_object(
+   'proveedores',coalesce((SELECT jsonb_agg(jsonb_build_object('id',p.id,'empresa',p.empresa)) FROM public.ts_proveedores p WHERE EXISTS(SELECT 1 FROM public.ts_ordenes o WHERE o.proveedor_id=p.id AND o.estado<>'Cancelada')),'[]'::jsonb),
+   'catalogo','[]'::jsonb,
+   'ordenes',coalesce((SELECT jsonb_agg(jsonb_build_object('id',o.id,'proveedor_id',o.proveedor_id,'estado',o.estado,'created_at',o.created_at) ORDER BY o.created_at DESC) FROM public.ts_ordenes o WHERE o.estado<>'Cancelada'),'[]'::jsonb),
+   'items',coalesce((SELECT jsonb_agg(jsonb_build_object('orden_id',i.orden_id,'producto_id',i.producto_id::text,'cantidad',i.cantidad,'recibida',i.recibida)) FROM public.ts_orden_items i JOIN public.ts_ordenes o ON o.id=i.orden_id WHERE o.estado<>'Cancelada'),'[]'::jsonb),
+   'recepciones',coalesce((SELECT jsonb_agg((to_jsonb(r)-'payload')||jsonb_build_object('usuario_responsable',(SELECT m.usuario_responsable FROM public.ts_recepcion_items ri JOIN public.movimientos m ON m.id=ri.movimiento_id WHERE ri.clave=r.clave LIMIT 1)) ORDER BY r.created_at DESC) FROM public.ts_recepciones r),'[]'::jsonb),
+   'recepcion_items',coalesce((SELECT jsonb_agg(to_jsonb(i)||jsonb_build_object('producto_id',i.producto_id::text,'movimiento_id',i.movimiento_id::text)) FROM public.ts_recepcion_items i),'[]'::jsonb)); END IF;
  IF p_accion='consultar' THEN RETURN jsonb_build_object(
  'proveedores',coalesce((SELECT jsonb_agg(to_jsonb(p) ORDER BY p.empresa) FROM public.ts_proveedores p),'[]'::jsonb),
- 'catalogo',coalesce((SELECT jsonb_agg(to_jsonb(c)) FROM public.ts_catalogo c),'[]'::jsonb),
+  'catalogo',coalesce((SELECT jsonb_agg(to_jsonb(c)||jsonb_build_object('producto_id',c.producto_id::text)) FROM public.ts_catalogo c),'[]'::jsonb),
  'ordenes',coalesce((SELECT jsonb_agg(to_jsonb(o) ORDER BY o.created_at DESC) FROM public.ts_ordenes o),'[]'::jsonb),
- 'items',coalesce((SELECT jsonb_agg(to_jsonb(i)) FROM public.ts_orden_items i),'[]'::jsonb)); END IF;
+  'items',coalesce((SELECT jsonb_agg(to_jsonb(i)||jsonb_build_object('producto_id',i.producto_id::text)) FROM public.ts_orden_items i),'[]'::jsonb),
+  'recepciones',coalesce((SELECT jsonb_agg((to_jsonb(r)-'payload')||jsonb_build_object('usuario_responsable',(SELECT m.usuario_responsable FROM public.ts_recepcion_items ri JOIN public.movimientos m ON m.id=ri.movimiento_id WHERE ri.clave=r.clave LIMIT 1)) ORDER BY r.created_at DESC) FROM public.ts_recepciones r),'[]'::jsonb),
+  'recepcion_items',coalesce((SELECT jsonb_agg(to_jsonb(i)||jsonb_build_object('producto_id',i.producto_id::text,'movimiento_id',i.movimiento_id::text)) FROM public.ts_recepcion_items i),'[]'::jsonb)); END IF;
  IF p_accion='proveedor' THEN
   v_id:=nullif(p_datos->>'id','')::uuid;
   IF v_id IS NULL THEN INSERT INTO public.ts_proveedores(empresa,contacto,telefono,correo,observaciones,activo)
@@ -107,14 +130,23 @@ BEGIN
  END IF;
  IF p_accion='crear_orden' THEN
   INSERT INTO public.ts_ordenes(proveedor_id,usuario_id) VALUES(v_id,auth.uid()) RETURNING id INTO v_id;
-  FOR v_item IN SELECT value FROM jsonb_array_elements(p_datos->'items') LOOP
+   FOR v_item IN SELECT value FROM jsonb_array_elements(p_datos->'items') ORDER BY (value->>'producto_id')::bigint LOOP
    IF (v_item->>'cantidad')::numeric<>trunc((v_item->>'cantidad')::numeric) THEN RAISE EXCEPTION 'Cantidad no entera' USING ERRCODE='22023'; END IF;
-   v_precio:=(v_item->>'precio_unitario')::numeric;
+    -- Ignore any browser price. Lock the catalog row and snapshot its trusted price.
+    SELECT precio INTO v_precio FROM public.ts_catalogo WHERE proveedor_id=(p_datos->>'proveedor_id')::uuid AND producto_id=(v_item->>'producto_id')::bigint FOR SHARE;
+    IF NOT FOUND THEN RAISE EXCEPTION 'Producto sin cotización de este proveedor' USING ERRCODE='22023'; END IF;
    IF v_precio IS NULL OR v_precio<0 OR v_precio::text IN ('NaN','Infinity','-Infinity') THEN RAISE EXCEPTION 'Precio inválido' USING ERRCODE='22023'; END IF;
    INSERT INTO public.ts_orden_items(orden_id,producto_id,cantidad,precio_unitario) VALUES(v_id,(v_item->>'producto_id')::bigint,(v_item->>'cantidad')::integer,v_precio);
   END LOOP;
   -- No stock/movement write on creation.
   RETURN jsonb_build_object('id',v_id);
+ END IF;
+ -- Lock receipt key BEFORE order row, always in the same order across requests.
+ -- Prevents a key/order lock inversion when two orders accidentally reuse a key.
+ IF p_accion='recibir' THEN
+  v_clave:=(p_datos->>'clave')::uuid;
+  IF v_clave IS NULL THEN RAISE EXCEPTION 'Falta referencia idempotente' USING ERRCODE='22023'; END IF;
+  PERFORM pg_advisory_xact_lock(hashtextextended(v_clave::text,0));
  END IF;
  IF p_accion IN ('estado','recibir') THEN
   v_id:=(p_datos->>'orden_id')::uuid;
@@ -129,13 +161,12 @@ BEGIN
  IF p_accion='recibir' THEN
   v_clave:=(p_datos->>'clave')::uuid;
   IF v_clave IS NULL THEN RAISE EXCEPTION 'Falta referencia idempotente' USING ERRCODE='22023'; END IF;
-  PERFORM pg_advisory_xact_lock(hashtextextended(v_clave::text,0));
   SELECT * INTO v_anterior FROM public.ts_recepciones WHERE clave=v_clave;
   IF FOUND THEN
    IF v_anterior.orden_id<>v_id OR v_anterior.payload IS DISTINCT FROM p_datos OR v_anterior.usuario_id<>auth.uid() THEN RAISE EXCEPTION 'Referencia reutilizada con datos diferentes' USING ERRCODE='22023'; END IF;
    RETURN jsonb_build_object('ok',true,'repetida',true);
   END IF;
-  IF v_orden.estado NOT IN ('Enviada','Parcialmente recibida') THEN RAISE EXCEPTION 'Esta orden no admite recepciones' USING ERRCODE='22023'; END IF;
+   IF v_orden.estado NOT IN ('Pendiente','Enviada','Parcialmente recibida') THEN RAISE EXCEPTION 'Esta orden no admite recepciones' USING ERRCODE='22023'; END IF;
   -- Deterministic product locking order reduces deadlock risk across orders.
   FOR v_item IN SELECT value FROM jsonb_array_elements(p_datos->'items') ORDER BY (value->>'producto_id')::bigint LOOP
    v_producto:=(v_item->>'producto_id')::bigint;
@@ -148,7 +179,7 @@ BEGIN
   INSERT INTO public.ts_recepciones(clave,orden_id,payload,usuario_id) VALUES(v_clave,v_id,p_datos,auth.uid());
   FOR v_item IN SELECT value FROM jsonb_array_elements(p_datos->'items') ORDER BY (value->>'producto_id')::bigint LOOP
    v_producto:=(v_item->>'producto_id')::bigint; v_cantidad:=(v_item->>'cantidad')::integer;
-   SELECT r.movimiento_id INTO STRICT v_movimiento FROM public.registrar_movimiento(v_producto,'entrada',v_cantidad,now(),NULL,'Recepción de compra','Orden '||v_id::text||' / recepción '||v_clave::text) r;
+    SELECT r.movimiento_id INTO STRICT v_movimiento FROM public.registrar_movimiento(v_producto,'entrada',v_cantidad,now(),NULL,'Recepción de proveedor','Orden '||v_id::text||' / recepción '||v_clave::text) r;
    INSERT INTO public.ts_recepcion_items(clave,producto_id,cantidad,movimiento_id) VALUES(v_clave,v_producto,v_cantidad,v_movimiento);
    UPDATE public.ts_orden_items SET recibida=recibida+v_cantidad WHERE orden_id=v_id AND producto_id=v_producto;
   END LOOP;
@@ -161,6 +192,9 @@ REVOKE ALL ON FUNCTION public.ts_compras(text,jsonb) FROM PUBLIC,anon;
 GRANT EXECUTE ON FUNCTION public.ts_compras(text,jsonb) TO authenticated;
 -- SECURITY DEFINER owned by trusted migration owner; verify postgres ownership during manual review.
 ALTER FUNCTION public.ts_es_admin() OWNER TO postgres;
+ALTER FUNCTION public.ts_puede_recibir() OWNER TO postgres;
 ALTER FUNCTION public.ts_compras(text,jsonb) OWNER TO postgres;
+-- Remove implicit/default browser writes too; SELECT alone is granted deliberately.
+REVOKE INSERT,UPDATE,DELETE,TRUNCATE,REFERENCES,TRIGGER ON public.ts_proveedores,public.ts_catalogo,public.ts_ordenes,public.ts_orden_items,public.ts_recepciones,public.ts_recepcion_items FROM PUBLIC,anon,authenticated;
 COMMIT;
 -- Realtime publication changes are intentionally separate and require review.

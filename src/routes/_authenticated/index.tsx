@@ -1,13 +1,20 @@
+import { etiquetaMovimiento } from "@/lib/historial";
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { AppShell, Etiqueta, Panel, BotonPrimario, BotonSuave, tonoEstado } from "@/components/AppShell";
 import { useState } from "react";
 import { useAuth } from "@/lib/auth";
 import { useCompras } from "@/lib/compras";
+import { usePromociones } from "@/lib/promociones";
+import { precioPresentado } from "@/lib/precios-venta";
+import { ResumenInteligente } from "@/components/ResumenInteligente";
 import { GraficoBarras, LeyendaGrafico } from "@/components/GraficoBarras";
-import { clavesDeMeses, fechaColombia, recomendaciones, serieMensual } from "@/lib/analisis";
+import { fechaColombia } from "@/lib/analisis";
 import { estadoDeProducto, eventosComerciales } from "@/lib/data";
 import { numero, pesos, fechaCorta } from "@/lib/format";
 import { useInventarioReal } from "@/lib/movimientos-supabase";
+import { indicadoresInventario } from "@/lib/indicadores";
+
+import { ArrowUpRight, Boxes, ArrowLeftRight, ChartNoAxesCombined } from "lucide-react";
 
 export const Route = createFileRoute("/_authenticated/")({
   head: () => ({
@@ -40,34 +47,23 @@ const FONDO_EVENTO: Record<string, string> = {
 
 function Dashboard() {
   const auth = useAuth();
-  const compras = useCompras(auth.rol === "administrador");
+  const compras = useCompras(Boolean(auth.rol), auth.user?.id, auth.rol);
+  const promociones = usePromociones(Boolean(auth.rol), auth.user?.id, auth.rol);
+  const campañasActivas = (promociones.data ?? []).filter(p => p.estado === "Activa");
+
   const [categoria, setCategoria] = useState("Todas");
   const { estado: carga, recargar } = useInventarioReal();
-  const todos = carga.tipo === "listo" ? carga.productos : [];
+  const todos = carga.tipo === "listo" ? carga.productos.filter(p => p.activo !== false) : [];
   const productos = todos.filter(p => categoria === "Todas" || p.categoria === categoria);
+  const descuentosVigentes = todos.filter(p => precioPresentado(p, promociones.data ?? []).descuento > 0).length;
   const movimientos = carga.tipo === "listo" ? carga.movimientos.filter(m => productos.some(p => p.id === m.productoId)) : [];
-  const meses = clavesDeMeses(6);
-  const serie = serieMensual(movimientos, meses);
-
-  const unidades = productos.reduce((s, p) => s + p.stock, 0);
-  const bajos = productos.filter((p) => estadoDeProducto(p) === "Stock bajo");
-
-  const rotacion = productos
-    .map((p) => ({
-      producto: p,
-      salidas: movimientos
-      .filter(
-        (m) => m.productoId === p.id && m.tipo === "salida" && fechaColombia(m.fechaHora || m.fecha).startsWith(meses[5] ?? ""),
-      )
-        .reduce((s, m) => s + m.cantidad, 0),
-    }))
-    .sort((a, b) => b.salidas - a.salidas);
-
-  const recos = recomendaciones(productos, movimientos).filter(r => r.pronostico.sugerido > 0).slice(0, 3);
+  const resumen = indicadoresInventario(productos, movimientos);
+  const { serie, unidades, bajos, rotacion } = resumen;
+  const recos = resumen.recomendaciones.filter(r => r.pronostico.sugerido > 0).slice(0, 3);
 
   return (
     <AppShell
-      titulo="TecnoStock — Gestión inteligente de inventario"
+      titulo="TecnoStock · Dashboard"
       subtitulo={carga.tipo === "cargando" ? "Cargando datos reales…" : carga.tipo === "error" ? "No se pudieron cargar los datos" : `Resumen del inventario · ${productos.filter((p) => p.stock === 0).length} agotados`}
       acciones={
         <Link to="/movimientos">
@@ -85,6 +81,11 @@ function Dashboard() {
       <label className="block max-w-sm text-xs text-ink-soft">Categoría<select className="campo mt-1" value={categoria} onChange={e => setCategoria(e.target.value)}><option>Todas</option>{Array.from(new Set(todos.map(p => p.categoria))).map(c => <option key={c}>{c}</option>)}</select></label>
       {carga.tipo === "cargando" && <p role="status">Cargando datos reales…</p>}
       {carga.tipo === "listo" && productos.length === 0 && <p className="text-sm text-ink-faint">Sin productos para esta selección.</p>}
+      <nav aria-label="Accesos rápidos" className="flex flex-wrap gap-4 border-y border-line py-3 text-sm text-brand">
+        <Link to="/inventario" className="inline-flex items-center gap-2"><Boxes className="size-4"/>Inventario<ArrowUpRight className="size-3"/></Link>
+        <Link to="/movimientos" className="inline-flex items-center gap-2"><ArrowLeftRight className="size-4"/>Movimientos<ArrowUpRight className="size-3"/></Link>
+        <Link to="/analisis" className="inline-flex items-center gap-2"><ChartNoAxesCombined className="size-4"/>Análisis<ArrowUpRight className="size-3"/></Link>
+      </nav>
       <section className="rise grid grid-cols-2 gap-3 xl:grid-cols-4">
         <Kpi
           titulo="Productos registrados"
@@ -134,7 +135,7 @@ function Dashboard() {
             </div>
             <LeyendaGrafico />
           </div>
-          <GraficoBarras serie={serie} />
+          <GraficoBarras serie={serie} movimientos={movimientos} />
         </Panel>
 
         <Panel className="p-5">
@@ -156,6 +157,18 @@ function Dashboard() {
               </li>
             ))}
           </ul>
+          <div className="mt-4 space-y-2 border-t border-line pt-3">
+            <div className="flex items-center justify-between gap-2">
+              <h3 className="text-xs font-semibold">Promociones vigentes</h3>
+              <Link to="/promociones" className="text-xs text-brand">Ver promociones →</Link>
+            </div>
+            {campañasActivas.length === 0 && <p className="text-xs text-ink-faint">
+              {promociones.isError ? "Promociones todavía no configuradas o no disponibles." : "No hay promociones activas en este momento."}
+            </p>}
+            {campañasActivas.slice(0,3).map(p => <p key={p.id} className="text-xs text-ink-soft">
+              <span className="font-semibold text-teal">{p.descuento_porcentaje}%</span> · {p.nombre} · {(p.alcance ?? "producto") === "todos" ? "Toda la tienda" : (p.alcance ?? "producto") === "categoria" ? `Categoría ${p.categoria}` : productos.find(x => Number(x.id) === Number(p.producto_id))?.nombre ?? "Producto"}
+            </p>)}
+          </div>
         </Panel>
       </section>
 
@@ -189,7 +202,7 @@ function Dashboard() {
                 </div>
                 <p className="mt-1.5 text-xs text-ink-soft">{r.mensaje}</p>
                 <p className="mt-2 text-[11px] text-ink-faint">
-                  Precio de compra: {pesos(r.producto.precioCompra)} c/u
+                  {auth.rol === "administrador" ? `Costo de compra: ${pesos(r.producto.precioCompra)} c/u` : "Consultar reposición con administrador"}
                 </p>
               </li>
             ))}
@@ -220,12 +233,12 @@ function Dashboard() {
                   <th className="px-3 py-2.5 font-medium">Categoría</th>
                   <th className="px-3 py-2.5 text-right font-medium">Stock</th>
                   <th className="px-3 py-2.5 text-right font-medium">Mín.</th>
-                  <th className="px-3 py-2.5 text-right font-medium">Precio</th>
+                  <th className="px-3 py-2.5 text-right font-medium">Precio de venta</th>
                   <th className="px-5 py-2.5 text-right font-medium">Estado</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-line">
-                {productos.map((p) => {
+                {productos.slice(0,8).map((p) => {
                   const estado = estadoDeProducto(p);
                   return (
                     <tr key={p.id} className="hover:bg-canvas/60">
@@ -238,8 +251,19 @@ function Dashboard() {
                       <td className="px-3 py-3 text-right font-mono text-[13px] text-ink-faint">
                         {p.stockMinimo}
                       </td>
-                      <td className="px-3 py-3 text-right font-mono text-[13px]">
-                        {pesos(p.precioCompra)}
+                      <td className="px-3 py-3 text-right text-xs">
+                        {(() => {
+                          const precio = precioPresentado(p, promociones.data ?? []);
+                          return precio.final === null ? <div className="space-y-1">
+                            {precio.descuento > 0 && <span className="inline-block rounded-full bg-teal/10 px-2 py-1 font-semibold text-teal">-{precio.descuento}% · {precio.nombrePromocion}</span>}
+                            <p className="text-ink-faint">{precio.descuento > 0 ? "En promoción · sin precio público" : "Sin configurar"}</p>
+                          </div> :
+                            <div className="space-y-0.5">
+                              {precio.descuento > 0 && <p className="text-ink-faint line-through">{pesos(precio.base ?? 0)}</p>}
+                              <p className="font-semibold">{pesos(precio.final)}</p>
+                              {precio.descuento > 0 && <span className="font-semibold text-teal">-{precio.descuento}%</span>}
+                            </div>;
+                        })()}
                       </td>
                       <td className="px-5 py-3 text-right">
                         <Etiqueta tono={tonoEstado(estado)} punto>
@@ -254,8 +278,10 @@ function Dashboard() {
           </div>
         </Panel>
       </section>
+      <ResumenInteligente />
+      <p className="text-xs text-ink-faint">Promociones aplicables a productos activos: {descuentosVigentes}. Sin precio de venta se muestra la campaña, pero no un precio final. Los descuentos nunca se calculan sobre costos de proveedores.</p>
       <section className="grid gap-4 lg:grid-cols-2">
-        <Panel className="p-5"><h2 className="font-display font-semibold">Últimos movimientos</h2><ul className="mt-3 divide-y divide-line">{movimientos.slice(0,8).map(m => <li key={m.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span>{productos.find(p => p.id === m.productoId)?.nombre ?? `Producto #${m.productoId}`}</span><Etiqueta tono={m.tipo === "entrada" ? "teal" : "rose"}>{m.tipo === "entrada" ? "Entrada" : "Salida"} · {m.cantidad} u.</Etiqueta></div><p className="mt-1 text-xs text-ink-faint">{m.usuario} · {fechaCorta(fechaColombia(m.fechaHora || m.fecha))}</p></li>)}</ul>{movimientos.length === 0 && <p className="mt-3 text-xs text-ink-faint">Sin movimientos registrados.</p>}<Link to="/movimientos" className="mt-3 inline-block text-xs text-brand">Ver historial →</Link></Panel>
+        <Panel className="p-5"><h2 className="font-display font-semibold">Últimos movimientos</h2><ul className="mt-3 divide-y divide-line">{movimientos.slice(0,8).map(m => <li key={m.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span>{productos.find(p => p.id === m.productoId)?.nombre ?? `Producto #${m.productoId}`}</span><Etiqueta tono={m.tipo === "entrada" ? "teal" : "rose"}>{etiquetaMovimiento(m)} · {m.cantidad} u.</Etiqueta></div><p className="mt-1 text-xs text-ink-faint">{m.usuario} · {fechaCorta(fechaColombia(m.fechaHora || m.fecha))}</p></li>)}</ul>{movimientos.length === 0 && <p className="mt-3 text-xs text-ink-faint">Sin movimientos registrados.</p>}<Link to="/movimientos" className="mt-3 inline-block text-xs text-brand">Ver historial →</Link></Panel>
         <Panel className="p-5"><h2 className="font-display font-semibold">Productos con mayor rotación</h2><ul className="mt-3 divide-y divide-line">{rotacion.filter(r => r.salidas > 0).slice(0,5).map(r => <li key={r.producto.id} className="flex justify-between gap-3 py-3 text-sm"><span>{r.producto.nombre}</span><span>{r.salidas} u.</span></li>)}</ul>{!rotacion.some(r => r.salidas > 0) && <p className="mt-3 text-xs text-ink-faint">Sin salidas este mes.</p>}{auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: "" }} className="mt-3 inline-block text-xs text-brand">Consultar órdenes de compra →</Link>}</Panel>
       </section>
     </AppShell>
@@ -285,7 +311,7 @@ function Kpi({
           {icono}
         </span>
       </div>
-      <p className="mt-3 truncate font-display text-3xl font-semibold tracking-tight">{valor}</p>
+      <p className={`mt-3 break-words font-display font-semibold ${valor.length > 12 ? "text-lg leading-snug" : "text-3xl"}`}>{valor}</p>
       <p className="mt-1 text-xs text-ink-faint">{pie}</p>
     </Panel>
   );

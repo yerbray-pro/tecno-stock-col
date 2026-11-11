@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { construirFila, validarProducto } from "./productos-supabase";
+import { construirFila, validarProducto, filaAProducto } from "./productos-supabase";
 
 const base = { nombre: "Parlante", categoria: "Audio", marca: "X", stock: 3, stockMinimo: 2, precioCompra: 25000 };
 
@@ -16,5 +16,14 @@ describe("construirFila", () => {
     const fila = construirFila(base, { stockMinimo: 1, precioCompra: 1 });
     expect(fila["stockMinimo"]).toBe(2);
     expect(fila["precioCompra"]).toBe(25000);
+  });
+});
+
+describe("estado del producto", () => {
+  it("mantiene productos existentes como activos cuando falta la columna", () => {
+    expect(filaAProducto({ id:1, nombre:"Cable", cantidad:2 }).activo).toBe(true);
+  });
+  it("respeta los productos inactivos de Supabase", () => {
+    expect(filaAProducto({ id:1, nombre:"Cable", cantidad:2, activo:false }).activo).toBe(false);
   });
 });

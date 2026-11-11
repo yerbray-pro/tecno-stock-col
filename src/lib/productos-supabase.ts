@@ -29,7 +29,9 @@ export function filaAProducto(f: Fila): Producto {
     stock: num(leer(f, "stock", "stock_actual", "stockActual", "cantidad")),
     stockMinimo: num(leer(f, "stock_minimo", "stockMinimo", "stock_min")),
     precioCompra: num(leer(f, "precio_compra", "precioCompra", "precio")),
+    precioVenta: leer(f, "precio_venta") == null ? null : num(leer(f, "precio_venta")),
     registrado: texto(leer(f, "registrado", "created_at", "fecha_registro")).slice(0, 10),
+    activo: leer(f, "activo") !== false,
   };
 }
 
@@ -41,7 +43,7 @@ export type EstadoCarga =
 export type NuevoProducto = Omit<Producto, "id" | "registrado">;
 
 /** Nombres alternativos aceptados para cada campo (el primero es el preferido). */
-const COLUMNAS: Record<keyof NuevoProducto, string[]> = {
+const COLUMNAS: Record<Exclude<keyof NuevoProducto, "activo" | "precioVenta">, string[]> = {
   nombre: ["nombre", "name"],
   categoria: ["categoria", "category"],
   marca: ["marca", "brand"],
@@ -58,7 +60,7 @@ const COLUMNAS: Record<keyof NuevoProducto, string[]> = {
 export function construirFila(p: NuevoProducto, ejemplo?: Fila): Fila {
   const existentes = ejemplo ? Object.keys(ejemplo) : [];
   const fila: Fila = {};
-  for (const campo of Object.keys(COLUMNAS) as (keyof NuevoProducto)[]) {
+  for (const campo of Object.keys(COLUMNAS) as (Exclude<keyof NuevoProducto, "activo" | "precioVenta">)[]) {
     const opciones = COLUMNAS[campo];
     const col = opciones.find((c) => existentes.includes(c)) ?? (opciones[0] as string);
     fila[col] = p[campo];
@@ -102,6 +104,39 @@ export async function editarProducto(p: Producto): Promise<{ ok: true } | { ok: 
   if (!supabase) return { ok: false, error: "La conexión no está configurada." };
   const { error } = await supabase.rpc("ts_guardar_producto", { p_datos: { id: p.id, nombre: p.nombre.trim(), categoria: p.categoria.trim(), marca: p.marca.trim(), modelo: p.modelo ?? "", stock_minimo: p.stockMinimo, precio_compra: p.precioCompra } });
   return error ? { ok: false, error: "No se pudo editar. Verifica permisos e instalación del SQL revisado; el stock no se modifica desde aquí." } : { ok: true };
+}
+
+/** Precio de venta separado del costo; requiere migración v2. */
+export async function actualizarPrecioVenta(id: string, precioVenta: number | null): Promise<
+  {ok:true} | {ok:false;error:string}
+> {
+  if (!supabase) return {ok:false,error:"Supabase no está configurado."};
+  if (!/^\d+$/.test(id) || (precioVenta !== null &&
+    (!Number.isFinite(precioVenta) || precioVenta <= 0 || Math.round(precioVenta * 100) !== precioVenta * 100)))
+    return {ok:false,error:"Indica un precio de venta válido, mayor a cero."};
+  const { error } = await supabase.rpc("ts_actualizar_precio_venta", {
+    p_producto_id: id, p_precio: precioVenta,
+  });
+  if (error) {
+    if (error.code === "PGRST202" || error.code === "42883")
+      return {ok:false,error:"Falta instalar el SQL de precio de venta en Supabase."};
+    return {ok:false,error:error.message || "No se pudo guardar el precio de venta."};
+  }
+  return {ok:true};
+}
+
+/** Solo administrador: cambia estado sin eliminar el producto ni su historial. */
+export async function cambiarEstadoProducto(id: string, activo: boolean): Promise<{ok:true}|{ok:false;error:string}> {
+  if (!supabase) return {ok:false,error:"La conexión con Supabase no está configurada."};
+  const {error} = await supabase.rpc("ts_cambiar_estado_producto", {
+    p_producto_id: id, p_activo: activo,
+  });
+  if (error) {
+    if (error.code === "PGRST202" || error.code === "42883") return {ok:false,error:"Falta instalar el SQL de inactivación de productos."};
+    if (error.code === "42501") return {ok:false,error:"Solo administradores pueden cambiar el estado."};
+    return {ok:false,error:error.message || "No se pudo cambiar el estado."};
+  }
+  return {ok:true};
 }
 
 export function useProductosSupabase() {

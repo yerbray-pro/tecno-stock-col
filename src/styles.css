@@ -44,6 +44,7 @@
   --color-teal: var(--teal);
   --color-amber: var(--amber);
   --color-rose: var(--rose);
+  --color-panel-outline: var(--panel-outline);
 
   --font-display: "Space Grotesk", ui-sans-serif, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -63,6 +64,7 @@
   --teal: oklch(0.591 0.096 183.4);
   --amber: oklch(0.573 0.126 70.5);
   --rose: oklch(0.545 0.161 25.6);
+  --panel-outline: color-mix(in oklab, var(--ink) 8%, transparent);
 
   --background: var(--canvas);
   --foreground: var(--ink);
@@ -133,4 +135,8 @@
   &:focus {
     box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-brand) 30%, transparent);
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .rise { animation: none; }
 }

@@ -1,5 +1,20 @@
 # TecnoStock: entrega y seguridad
 
+## Solicitud del 11 de noviembre: proveedores y recepciones
+- [ ] Separar administración /proveedores y recepción /recepciones para ambos roles, con datos reales compartidos.
+- [ ] Preparar SQL manual de roles, consulta limitada, precios de catálogo y recepción atómica/idempotente; no ejecutarlo.
+- [ ] Ampliar pruebas y documentar resultados, archivos y verificación real pendiente; sin publicar.
+- [ ] Verificar flujo persistente administrador/trabajador y Realtime. Bloqueado: tablas ts_ no instaladas, sin sesión externa disponible.
+
+## Solicitud del 10 de noviembre: IA y presentación
+- [x] Confirmar main como rama sincronizada: confirmado por el usuario, sin cambiar Git ni producción.
+- [x] Implementar asistente IA administrativo, salida estricta y cuota duradera propuesta; llamada real de contrato válida con muestra técnica sintética.
+- [x] Mejorar Dashboard, filtros de Análisis, búsqueda/paginación de Inventario y motivo/observación en movimientos reutilizando datos compartidos.
+- [x] Revisar SQL manual de compras: permisos implícitos, dependencia SECURITY DEFINER/owner, orden de bloqueo e historial; no ejecutado.
+- [x] Ejecutar 84 pruebas, comprobar build OK y rechazo HTTP 401 sin sesión; entregar docs/IA_PREVIEW_QA.md.
+- [ ] Activar/probar asistente completo en Vercel Preview. Bloqueado: variables del servidor externo, SQL ts_ia_control no instalado y sesión administrativa no disponible aquí.
+- [ ] Validar presentación de las cinco pantallas privadas y Realtime con datos/sesiones reales. Bloqueado: conexión externa y sesión no disponibles en este entorno.
+
 ## Revisión prioritaria: datos compartidos, reposición y trabajadores
 - [x] Confirmar en código que Dashboard, Inventario, Análisis y Proveedores usan la misma consulta y que movimientos/Realtime invalidan esa clave compartida.
 - [x] Confirmar reposición para cantidad <= stock_minimo, el caso Prueba TecnoStock 001 (1/2) y la etiqueta Agotado — Urgente; 59 pruebas y compilación correctas.

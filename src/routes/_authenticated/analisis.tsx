@@ -1,6 +1,9 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
-import { AppShell, Etiqueta, Panel } from "@/components/AppShell";
+import { AppShell, Etiqueta, Panel, BotonSuave } from "@/components/AppShell";
+import { AccesoAsistenteIA } from "@/components/AccesoAsistenteIA";
+import { ResumenInteligente } from "@/components/ResumenInteligente";
+import { filtrarProductos, minimoAReponer, type FiltroProductos } from "@/lib/indicadores";
 import { GraficoBarras, LeyendaGrafico, MiniLinea } from "@/components/GraficoBarras";
 import { clavesDeMeses, pronosticar, recomendaciones, serieMensual } from "@/lib/analisis";
 import { estadoDeProducto, eventosComerciales } from "@/lib/data";
@@ -31,8 +34,10 @@ export const Route = createFileRoute("/_authenticated/analisis")({
 
 function Analisis() {
   const { estado: carga } = useInventarioReal();
-  const productos = carga.tipo === "listo" ? carga.productos : [];
-  const movimientos = carga.tipo === "listo" ? carga.movimientos : [];
+  const todos = carga.tipo === "listo" ? carga.productos.filter(p => p.activo !== false) : [];
+  const [filtros, setFiltros] = useState<FiltroProductos>({ texto:"",categoria:"Todas",estado:"Todos",productoId:"" });
+  const productos = filtrarProductos(todos,filtros);
+  const movimientos = carga.tipo === "listo" ? carga.movimientos.filter(m=>productos.some(p=>p.id===m.productoId)) : [];
   const [eventoId, setEventoId] = useState("ninguno");
   const evento = eventosComerciales.find((e) => e.id === eventoId);
   const factor = evento?.factor ?? 1;
@@ -50,11 +55,23 @@ function Analisis() {
     >
       {carga.tipo !== "listo" && <p role={carga.tipo === "error" ? "alert" : "status"} className="text-sm text-ink-soft">{carga.tipo === "error" ? carga.mensaje : "Cargando datos reales…"}</p>}
       {carga.tipo === "listo" && productos.length === 0 && <p className="text-sm text-ink-soft">Todavía no hay productos registrados.</p>}
+      <section className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+        <label className="text-xs text-ink-soft">Producto<select className="campo mt-1" value={filtros.productoId} onChange={e=>setFiltros({...filtros,productoId:e.target.value})}><option value="">Todos los productos</option>{todos.map(p=><option key={p.id} value={p.id}>{p.nombre} · #{p.id}</option>)}</select></label>
+        <label className="text-xs text-ink-soft">Categoría<select className="campo mt-1" value={filtros.categoria} onChange={e=>setFiltros({...filtros,categoria:e.target.value})}><option>Todas</option>{Array.from(new Set(todos.map(p=>p.categoria))).map(c=><option key={c}>{c}</option>)}</select></label>
+        <label className="text-xs text-ink-soft">Existencias<select className="campo mt-1" value={filtros.estado} onChange={e=>setFiltros({...filtros,estado:e.target.value as FiltroProductos["estado"]})}><option value="Todos">Todos los estados</option><option value="Agotado">Agotado — Urgente</option><option value="Stock bajo">Reponer</option><option value="Disponible">Stock suficiente</option></select></label>
+        <div className="flex items-end"><BotonSuave onClick={()=>setFiltros({texto:"",categoria:"Todas",estado:"Todos",productoId:""})}>Limpiar filtros</BotonSuave></div>
+      </section>
+      <div className="grid gap-4 lg:grid-cols-2">
+        <AccesoAsistenteIA />
+        <ResumenInteligente />
+      </div>
       <section className="space-y-3">
-        <h2 className="font-display text-base font-semibold">Productos que necesitan reposición</h2>
+        <h2 className="font-display text-base font-semibold">Alertas de stock y reposición</h2>
         <ul className="grid gap-3 lg:grid-cols-2">{necesidades.map(r => <li key={r.producto.id} className="rounded-lg border border-line p-3">
           <div className="flex flex-wrap justify-between gap-2"><span className="font-medium">{r.producto.nombre}</span><Etiqueta tono={r.prioridad === "Urgente" ? "rose" : "amber"}>{r.prioridad === "Urgente" ? "Agotado — Urgente" : r.prioridad}</Etiqueta></div>
-          <p className="mt-2 text-xs text-ink-soft">{r.mensaje}</p>
+          <p className="mt-2 text-xs text-ink-soft">Stock {r.producto.stock} · mínimo {r.producto.stockMinimo} · reposición mínima {minimoAReponer(r.producto)} u.</p>
+          {r.pronostico.suficienteHistorial && <p className="mt-1 text-xs text-brand">Escenario estadístico: {r.pronostico.sugerido} u.</p>}
+          {!r.pronostico.suficienteHistorial && <p className="mt-1 text-xs text-ink-faint">Sin pronóstico: historial insuficiente.</p>}
           {auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: r.producto.id }} className="mt-2 inline-block text-xs text-brand">Crear solicitud de compra →</Link>}
         </li>)}</ul>
         {carga.tipo === "listo" && necesidades.length === 0 && <p className="text-sm text-ink-faint">No hay necesidades de reposición identificadas.</p>}
@@ -66,7 +83,7 @@ function Analisis() {
               Evento comercial a considerar
             </h2>
             <p className="text-xs text-ink-faint">
-              Estimación estadística, no IA generativa. Los ajustes de eventos son escenarios manuales, no demanda observada.
+              Escenario estadístico · ajustes manuales, no demanda observada.
             </p>
           </div>
           <select
@@ -94,13 +111,13 @@ function Analisis() {
         <div className="flex flex-wrap items-baseline justify-between gap-2">
           <div>
             <h2 className="font-display text-base font-semibold tracking-tight">
-              Historial de movimientos y ventas
+              Historial de movimientos
             </h2>
-            <p className="text-xs text-ink-faint">Últimos 6 meses · todas las categorías</p>
+            <p className="text-xs text-ink-faint">Últimos 6 meses · productos seleccionados</p>
           </div>
           <LeyendaGrafico />
         </div>
-        <GraficoBarras serie={serie} />
+        <GraficoBarras serie={serie} movimientos={movimientos} />
         <div className="mt-4 grid grid-cols-2 gap-3 sm:grid-cols-4">
           <Resumen
             titulo="Salidas del último mes"
@@ -150,7 +167,7 @@ function Analisis() {
               </tr>
             </thead>
             <tbody className="divide-y divide-line">
-              {productos.map((p) => {
+              {recos.map(({producto:p}) => {
                 const f = pronosticar(p, movimientos, factor);
                 if (!f.suficienteHistorial) {
                   return (
