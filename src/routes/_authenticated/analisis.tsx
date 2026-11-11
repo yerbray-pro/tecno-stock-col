@@ -2,6 +2,7 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { useState } from "react";
 import { AppShell, Etiqueta, Panel, BotonSuave } from "@/components/AppShell";
 import { AccesoAsistenteIA } from "@/components/AccesoAsistenteIA";
+import { ResumenInteligente } from "@/components/ResumenInteligente";
 import { filtrarProductos, minimoAReponer, type FiltroProductos } from "@/lib/indicadores";
 import { GraficoBarras, LeyendaGrafico, MiniLinea } from "@/components/GraficoBarras";
 import { clavesDeMeses, pronosticar, recomendaciones, serieMensual } from "@/lib/analisis";
