@@ -7,6 +7,8 @@ import { useInventarioReal } from "@/lib/movimientos-supabase";
 import { CLAVE_PROMOCIONES, consultarPromociones, usePromociones } from "@/lib/promociones";
 import { eventosComerciales } from "@/lib/data";
 import { fechaColombia } from "@/lib/analisis";
+import { precioPresentado } from "@/lib/precios-venta";
+import { pesos } from "@/lib/format";
 
 export const Route = createFileRoute("/_authenticated/promociones")({
   head: () => ({ meta: [{ title: "Promociones — TecnoStock" }] }),
@@ -22,7 +24,7 @@ function Promociones() {
   const activos = productos.filter(p => p.activo !== false);
   const hoy = fechaColombia(new Date().toISOString());
   const [form, setForm] = useState({
-    nombre: "", productoId: "", descuento: "10",
+    nombre: "", productoId: "", categoria: "", alcance: "producto" as "producto" | "categoria" | "todos", descuento: "10",
     inicio: hoy, fin: hoy,
   });
   const [cargando, setCargando] = useState(false);
@@ -45,19 +47,22 @@ function Promociones() {
     e.preventDefault();
     if (cargando || auth.rol !== "administrador") return;
     const descuento = Number(form.descuento);
-    if (!/^\d+$/.test(form.productoId) || !Number.isInteger(descuento) || descuento < 1 || descuento > 70 ||
+    if ((form.alcance === "producto" && !/^\d+$/.test(form.productoId)) ||
+        (form.alcance === "categoria" && !form.categoria) || !Number.isInteger(descuento) || descuento < 1 || descuento > 70 ||
         !form.nombre.trim() || !form.inicio || !form.fin || form.fin < form.inicio) {
       setMensaje({ok:false,texto:"Revisa producto, nombre, porcentaje (1–70) y fechas."});return;
     }
     setCargando(true);setMensaje(null);
     try {
       await consultarPromociones("crear", {
-        nombre: form.nombre.trim(), producto_id: form.productoId,
+        nombre: form.nombre.trim(), alcance: form.alcance,
+        producto_id: form.alcance === "producto" ? form.productoId : null,
+        categoria: form.alcance === "categoria" ? form.categoria : null,
         descuento_porcentaje: descuento,
         fecha_inicio: form.inicio, fecha_fin: form.fin,
       });
       await cache.invalidateQueries({ queryKey: CLAVE_PROMOCIONES });
-      setForm(f => ({...f, nombre:"", productoId:"", descuento:"10", inicio:hoy, fin:hoy}));
+      setForm(f => ({...f, nombre:"", productoId:"", categoria:"", alcance:"producto", descuento:"10", inicio:hoy, fin:hoy}));
       setMensaje({ok:true,texto:"Promoción guardada. Solo estará activa durante sus fechas y si está habilitada."});
     } catch (error) {
       setMensaje({ok:false,texto:error instanceof Error ? error.message : "No se pudo guardar."});
@@ -99,12 +104,26 @@ function Promociones() {
           <input className="campo mt-1" required minLength={3} maxLength={100} value={form.nombre}
             onChange={e=>setForm({...form,nombre:e.target.value})} placeholder="Ej. Black Friday audífonos" />
         </label>
-        <label className="text-xs text-ink-soft">Producto
+        <label className="text-xs text-ink-soft">Aplicar a
+          <select className="campo mt-1" value={form.alcance}
+            onChange={e=>setForm({...form,alcance:e.target.value as "producto"|"categoria"|"todos",productoId:"",categoria:""})}>
+            <option value="producto">Un producto</option>
+            <option value="categoria">Una categoría</option>
+            <option value="todos">Todos los productos activos</option>
+          </select>
+        </label>
+        {form.alcance === "producto" && <label className="text-xs text-ink-soft">Producto
           <select className="campo mt-1" required value={form.productoId} onChange={e=>setForm({...form,productoId:e.target.value})}>
             <option value="">Seleccionar producto</option>
             {activos.map(p => <option key={p.id} value={p.id}>{p.nombre}</option>)}
           </select>
-        </label>
+        </label>}
+        {form.alcance === "categoria" && <label className="text-xs text-ink-soft">Categoría
+          <select className="campo mt-1" required value={form.categoria} onChange={e=>setForm({...form,categoria:e.target.value})}>
+            <option value="">Seleccionar categoría</option>
+            {Array.from(new Set(activos.map(p=>p.categoria))).map(cat=><option key={cat} value={cat}>{cat}</option>)}
+          </select>
+        </label>}
         <label className="text-xs text-ink-soft">Descuento (%)
           <input className="campo mt-1" required type="number" min={1} max={70} step={1}
             value={form.descuento} onChange={e=>setForm({...form,descuento:e.target.value})}/>
@@ -133,14 +152,16 @@ function Promociones() {
       {consulta.data?.length===0 && <p className="p-5 text-sm text-ink-faint">No hay promociones visibles. El administrador puede programar la primera.</p>}
       {Boolean(consulta.data?.length) && <table className="w-full min-w-[670px] text-left text-sm">
         <thead><tr className="border-b border-line text-xs text-ink-faint">
-          <th className="px-4 py-3">Campaña</th><th className="px-4 py-3">Producto</th>
+          <th className="px-4 py-3">Campaña</th><th className="px-4 py-3">Aplicación</th>
           <th className="px-4 py-3">Descuento</th><th className="px-4 py-3">Vigencia</th>
           <th className="px-4 py-3">Estado</th>{auth.rol==="administrador" && <th className="px-4 py-3">Acción</th>}
         </tr></thead>
         <tbody className="divide-y divide-line">{consulta.data?.map(p => (
           <tr key={p.id}>
             <td className="px-4 py-3 font-medium">{p.nombre}</td>
-            <td className="px-4 py-3">{nombreProducto(p.producto_id)}</td>
+            <td className="px-4 py-3">{(p.alcance ?? "producto")==="todos" ? "Toda la tienda" :
+              (p.alcance ?? "producto")==="categoria" ? `Categoría: ${p.categoria ?? "—"}` :
+              p.producto_id == null ? "Sin producto" : nombreProducto(p.producto_id)}</td>
             <td className="px-4 py-3 font-semibold">{p.descuento_porcentaje}%</td>
             <td className="px-4 py-3 text-xs">{p.fecha_inicio} al {p.fecha_fin}</td>
             <td className="px-4 py-3">
