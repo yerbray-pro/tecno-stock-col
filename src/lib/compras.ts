@@ -14,6 +14,10 @@ export type RecepcionReal = { clave:string; orden_id:string; usuario_id:string; 
 export type RecepcionItemReal = { clave:string; producto_id:string|number; cantidad:number; movimiento_id:string|number };
 export type Compras = { proveedores: ProveedorReal[]; catalogo: Cotizacion[]; ordenes: OrdenReal[]; items: ItemReal[]; recepciones?:RecepcionReal[]; recepcion_items?:RecepcionItemReal[] };
 export function filtrarOrdenes(ordenes:OrdenReal[], estado:string) {return ordenes.filter(o=>estado==="Todas" || o.estado===estado);}
+/** Solo órdenes que aún pueden recibir mercancía; las recibidas pasan al historial. */
+export function ordenesPorRecibir(ordenes: OrdenReal[]): OrdenReal[] {
+  return ordenes.filter(o => ["Pendiente", "Enviada", "Parcialmente recibida"].includes(o.estado));
+}
 export async function operarCompras(accion: string, datos: Record<string, unknown> = {}) {
   if (!supabase) throw new Error("La conexión no está configurada en esta vista previa.");
   const { data, error } = await supabase.rpc("ts_compras", { p_accion: accion, p_datos: datos });
