@@ -11,12 +11,14 @@ export const Route = createFileRoute("/_authenticated/asistente-ia")({
 });
 type Mensaje = { role: "user" | "model"; text: string };
 const SUGERENCIAS = [
+  "¿Qué promociones hay, en qué productos y cuánto?",
   "¿Cuántos audífonos hay disponibles?",
-  "¿Qué productos están agotados?",
-  "¿Qué productos debo reponer y cuántos?",
+  "¿Quién hizo la última salida y de qué producto?",
   "¿Hay órdenes de compra abiertas?",
+  "¿Qué productos debo reponer y cuántos?",
+  "¿Qué proveedor vende más baratos los audífonos?",
+  "¿Cuántas entradas registramos hoy?",
   "¿Qué productos tienen más salidas?",
-  "¿Cuál proveedor tiene mejor precio para un producto?",
 ];
 function AsistenteIA() {
   const auth = useAuth();
