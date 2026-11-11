@@ -339,7 +339,7 @@ function Inventario() {
               {auth.rol === "administrador" && <Dato titulo="Costo de compra" valor={pesos(detalle.precioCompra)} />}
               <Dato titulo="Precio de venta" valor={precioDetalle?.base == null ? "Sin configurar" : pesos(precioDetalle.base)} />
               {precioDetalle && precioDetalle.descuento > 0 && precioDetalle.base == null && <p className="col-span-2 rounded-lg bg-amber/10 p-3 text-xs text-amber">Promoción activa: {precioDetalle.nombrePromocion} (−{precioDetalle.descuento}%). Define un precio de venta para calcular y mostrar el precio final.</p>}
-              {precioDetalle && precioDetalle.descuento > 0 && <Dato titulo={`Promoción -${precioDetalle.descuento}%`} valor={pesos(precioDetalle.final ?? 0)} />}
+              {precioDetalle && precioDetalle.descuento > 0 && precioDetalle.final !== null && <Dato titulo={`Promoción -${precioDetalle.descuento}%`} valor={pesos(precioDetalle.final)} />}
               <Dato titulo="Registrado" valor={fechaCorta(detalle.registrado)} />
             </dl>
 
