@@ -81,12 +81,12 @@ function Dashboard() {
       <label className="block max-w-sm text-xs text-ink-soft">Categoría<select className="campo mt-1" value={categoria} onChange={e => setCategoria(e.target.value)}><option>Todas</option>{Array.from(new Set(todos.map(p => p.categoria))).map(c => <option key={c}>{c}</option>)}</select></label>
       {carga.tipo === "cargando" && <p role="status">Cargando datos reales…</p>}
       {carga.tipo === "listo" && productos.length === 0 && <p className="text-sm text-ink-faint">Sin productos para esta selección.</p>}
-      <nav aria-label="Accesos rápidos" className="flex flex-wrap gap-4 border-y border-line py-3 text-sm text-brand">
+      <nav aria-label="Accesos rápidos" className="flex min-w-0 flex-wrap gap-x-4 gap-y-3 border-y border-line py-3 text-sm text-brand">
         <Link to="/inventario" className="inline-flex items-center gap-2"><Boxes className="size-4"/>Inventario<ArrowUpRight className="size-3"/></Link>
         <Link to="/movimientos" className="inline-flex items-center gap-2"><ArrowLeftRight className="size-4"/>Movimientos<ArrowUpRight className="size-3"/></Link>
         <Link to="/analisis" className="inline-flex items-center gap-2"><ChartNoAxesCombined className="size-4"/>Análisis<ArrowUpRight className="size-3"/></Link>
       </nav>
-      <section className="rise grid grid-cols-2 gap-3 xl:grid-cols-4">
+      <section className="rise grid min-w-0 grid-cols-1 gap-3 sm:grid-cols-2 xl:grid-cols-4">
         <Kpi
           titulo="Productos registrados"
           valor={String(productos.length)}
@@ -122,9 +122,9 @@ function Dashboard() {
         {compras.data && <Kpi titulo="Órdenes pendientes / recibidas" valor={`${compras.data.ordenes.filter(o => ["Pendiente","Enviada","Parcialmente recibida"].includes(o.estado)).length} / ${compras.data.ordenes.filter(o => o.estado === "Recibida").length}`} pie="Órdenes persistidas" icono="▣" />}
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-3">
-        <Panel className="p-5 xl:col-span-2">
-          <div className="flex flex-wrap items-baseline justify-between gap-2">
+      <section className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
+        <Panel className="min-w-0 p-4 sm:p-5 xl:col-span-2">
+          <div className="flex min-w-0 flex-wrap items-baseline justify-between gap-2">
             <div>
               <h2 className="font-display text-base font-semibold tracking-tight">
                 Movimientos por mes
@@ -138,7 +138,7 @@ function Dashboard() {
           <GraficoBarras serie={serie} movimientos={movimientos} />
         </Panel>
 
-        <Panel className="p-5">
+        <Panel className="min-w-0 p-4 sm:p-5">
           <h2 className="font-display text-base font-semibold tracking-tight">Próximos eventos</h2>
           <p className="text-xs text-ink-faint">Influyen en la demanda</p>
           <ul className="mt-4 space-y-3">
@@ -172,8 +172,8 @@ function Dashboard() {
         </Panel>
       </section>
 
-      <section className="grid gap-4 xl:grid-cols-3">
-        <Panel className="p-5">
+      <section className="grid min-w-0 grid-cols-1 gap-4 xl:grid-cols-3">
+        <Panel className="min-w-0 p-4 sm:p-5">
           <div className="flex items-center justify-between gap-2">
             <h2 className="font-display text-base font-semibold tracking-tight">
               Recomendaciones de reposición
@@ -215,8 +215,8 @@ function Dashboard() {
           </Link>
         </Panel>
 
-        <Panel className="xl:col-span-2">
-          <div className="flex flex-wrap items-center justify-between gap-2 border-b border-line px-5 py-4">
+        <Panel className="min-w-0 xl:col-span-2">
+          <div className="flex min-w-0 flex-wrap items-center justify-between gap-2 border-b border-line px-4 py-4 sm:px-5">
             <div>
               <h2 className="font-display text-base font-semibold tracking-tight">Inventario</h2>
               <p className="text-xs text-ink-faint">Vista general de productos</p>
@@ -225,7 +225,32 @@ function Dashboard() {
               Ver inventario completo
             </Link>
           </div>
-          <div className="overflow-x-auto">
+          <div className="space-y-2 p-3 sm:hidden" aria-label="Resumen de productos">
+            {productos.slice(0, 8).map(p => {
+              const precio = precioPresentado(p, promociones.data ?? []);
+              const estado = estadoDeProducto(p);
+              return (
+                <div key={p.id} className="min-w-0 space-y-2 rounded-xl border border-line p-3">
+                  <div className="flex min-w-0 flex-wrap items-start justify-between gap-2">
+                    <div className="min-w-0 flex-1">
+                      <p className="break-words text-sm font-semibold">{p.nombre}</p>
+                      <p className="text-xs text-ink-faint">{p.categoria} · {p.marca}</p>
+                    </div>
+                    <Etiqueta tono={tonoEstado(estado)} punto>{estado}</Etiqueta>
+                  </div>
+                  <div className="grid min-w-0 grid-cols-2 gap-2 text-xs">
+                    <div>Existencias: <strong className="text-ink">{p.stock} u.</strong></div>
+                    <div>Stock mínimo: <strong className="text-ink">{p.stockMinimo} u.</strong></div>
+                  </div>
+                  <div className="break-words text-xs">
+                    Precio: <strong className="text-ink">{precio.final === null ? "Sin configurar" : pesos(precio.final)}</strong>
+                    {precio.descuento > 0 && <span className="ml-2 font-medium text-teal">-{precio.descuento}%</span>}
+                  </div>
+                </div>
+              );
+            })}
+          </div>
+          <div className="hidden max-w-full overflow-x-auto sm:block" role="region" aria-label="Tabla de inventario del Dashboard" tabIndex={0}>
             <table className="w-full min-w-[640px] text-left text-sm">
               <thead>
                 <tr className="border-b border-line text-[11px] uppercase tracking-wide text-ink-faint">
@@ -280,9 +305,9 @@ function Dashboard() {
       </section>
       <ResumenInteligente />
       <p className="text-xs text-ink-faint">Promociones aplicables a productos activos: {descuentosVigentes}. Sin precio de venta se muestra la campaña, pero no un precio final. Los descuentos nunca se calculan sobre costos de proveedores.</p>
-      <section className="grid gap-4 lg:grid-cols-2">
-        <Panel className="p-5"><h2 className="font-display font-semibold">Últimos movimientos</h2><ul className="mt-3 divide-y divide-line">{movimientos.slice(0,8).map(m => <li key={m.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span>{productos.find(p => p.id === m.productoId)?.nombre ?? `Producto #${m.productoId}`}</span><Etiqueta tono={m.tipo === "entrada" ? "teal" : "rose"}>{etiquetaMovimiento(m)} · {m.cantidad} u.</Etiqueta></div><p className="mt-1 text-xs text-ink-faint">{m.usuario} · {fechaCorta(fechaColombia(m.fechaHora || m.fecha))}</p></li>)}</ul>{movimientos.length === 0 && <p className="mt-3 text-xs text-ink-faint">Sin movimientos registrados.</p>}<Link to="/movimientos" className="mt-3 inline-block text-xs text-brand">Ver historial →</Link></Panel>
-        <Panel className="p-5"><h2 className="font-display font-semibold">Productos con mayor rotación</h2><ul className="mt-3 divide-y divide-line">{rotacion.filter(r => r.salidas > 0).slice(0,5).map(r => <li key={r.producto.id} className="flex justify-between gap-3 py-3 text-sm"><span>{r.producto.nombre}</span><span>{r.salidas} u.</span></li>)}</ul>{!rotacion.some(r => r.salidas > 0) && <p className="mt-3 text-xs text-ink-faint">Sin salidas este mes.</p>}{auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: "" }} className="mt-3 inline-block text-xs text-brand">Consultar órdenes de compra →</Link>}</Panel>
+      <section className="grid min-w-0 grid-cols-1 gap-4 lg:grid-cols-2">
+        <Panel className="min-w-0 p-4 sm:p-5"><h2 className="font-display font-semibold">Últimos movimientos</h2><ul className="mt-3 divide-y divide-line">{movimientos.slice(0,8).map(m => <li key={m.id} className="py-3 text-sm"><div className="flex flex-wrap justify-between gap-2"><span>{productos.find(p => p.id === m.productoId)?.nombre ?? `Producto #${m.productoId}`}</span><Etiqueta tono={m.tipo === "entrada" ? "teal" : "rose"}>{etiquetaMovimiento(m)} · {m.cantidad} u.</Etiqueta></div><p className="mt-1 text-xs text-ink-faint">{m.usuario} · {fechaCorta(fechaColombia(m.fechaHora || m.fecha))}</p></li>)}</ul>{movimientos.length === 0 && <p className="mt-3 text-xs text-ink-faint">Sin movimientos registrados.</p>}<Link to="/movimientos" className="mt-3 inline-block text-xs text-brand">Ver historial →</Link></Panel>
+        <Panel className="min-w-0 p-4 sm:p-5"><h2 className="font-display font-semibold">Productos con mayor rotación</h2><ul className="mt-3 divide-y divide-line">{rotacion.filter(r => r.salidas > 0).slice(0,5).map(r => <li key={r.producto.id} className="flex justify-between gap-3 py-3 text-sm"><span>{r.producto.nombre}</span><span>{r.salidas} u.</span></li>)}</ul>{!rotacion.some(r => r.salidas > 0) && <p className="mt-3 text-xs text-ink-faint">Sin salidas este mes.</p>}{auth.rol === "administrador" && <Link to="/proveedores" search={{ producto: "" }} className="mt-3 inline-block text-xs text-brand">Consultar órdenes de compra →</Link>}</Panel>
       </section>
     </AppShell>
   );
@@ -302,9 +327,9 @@ function Kpi({
   alerta?: boolean;
 }) {
   return (
-    <Panel className="p-4">
-      <div className="flex items-center justify-between gap-2">
-        <p className="min-w-0 truncate text-[13px] text-ink-soft">{titulo}</p>
+    <Panel className="min-w-0 p-4">
+      <div className="flex min-w-0 items-center justify-between gap-2">
+        <p className="min-w-0 break-words text-[13px] leading-snug text-ink-soft">{titulo}</p>
         <span
           className={`grid size-6 shrink-0 place-items-center rounded-md ${alerta ? "bg-amber/10 text-amber" : "bg-canvas text-ink-faint"}`}
         >
