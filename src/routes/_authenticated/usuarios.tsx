@@ -59,7 +59,7 @@ function Usuarios() {
   }
   async function guardarCredencial() {
     if (!credencial || busy) return;
-    if (!/^\\d{6}$/.test(credencial.pin)) {
+    if (!/^\d{6}$/.test(credencial.pin)) {
       setMensaje({ ok: false, text: "Escribe el código de seis dígitos que llegó al correo administrativo." }); return;
     }
     if (credencial.accion === "contrasena" && (credencial.clave.length < 12 || credencial.clave.length > 128)) {
