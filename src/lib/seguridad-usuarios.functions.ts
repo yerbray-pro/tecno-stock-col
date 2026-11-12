@@ -23,7 +23,7 @@ const solicitud = z.object({
 const verificacion = z.object({
   userId: uuid,
   accion: z.enum(["correo", "contrasena"]),
-  codigo: z.string().regex(/^\d{6,10}$/, "Escribe el PIN completo, de 6 a 10 dígitos."),
+  codigo: z.string().regex(/^\d{6}$/, "El PIN debe contener exactamente 6 dígitos."),
 });
 const cambio = z.discriminatedUnion("accion", [
   z.object({
