@@ -49,12 +49,10 @@ function Movimientos() {
     productoId: "",
     tipo: "salida" as "entrada" | "salida",
     cantidad: "1",
-    fecha: hoyColombia(),
     motivo: "Venta",
     observacion: "",
   });
 
-  const [fechaManual, setFechaManual] = useState(false);
   const [motivoOtro, setMotivoOtro] = useState("");
   const motivos = form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
   const lista = filtrarHistorial(movimientos, productos, filtros);
@@ -81,14 +79,13 @@ function Movimientos() {
                 productoId,
                 tipo: form.tipo,
                 cantidad,
-                // Si no se escogió otra fecha, la BD guarda now() con la hora real.
-                fecha: fechaManual ? form.fecha : "",
+                // Fecha oficial asignada en la función de Supabase.
+                fecha: "",
                 motivo,
                 observacion: form.observacion,
               });
               if (r.ok) {
-                setForm(prev => ({ ...prev, cantidad: "1", fecha: hoyColombia() }));
-                setFechaManual(false);
+                setForm(prev => ({ ...prev, cantidad: "1" }));
                 setMotivoOtro("");
               }
               setAviso(
@@ -121,22 +118,22 @@ function Movimientos() {
             </label>
 
             <div className="grid grid-cols-2 gap-2">
-              <BotonSuave
+              <button
                 type="button"
                 aria-pressed={form.tipo === "entrada"}
                 onClick={() => { setForm({ ...form, tipo: "entrada", motivo: "Ingreso manual" }); setMotivoOtro(""); }}
-                className={`rounded-[10px] border px-3 py-2 text-sm font-medium transition-colors ${form.tipo === "entrada" ? "border-brand bg-brand/8 text-brand" : "border-line text-ink-soft hover:bg-canvas"}`}
+                className={`rounded-[10px] border px-3 py-2 text-sm font-semibold transition-colors ${form.tipo === "entrada" ? "border-brand bg-brand text-white shadow-sm" : "border-line bg-panel text-ink-soft hover:bg-canvas"}`}
               >
                 Entrada
-              </BotonSuave>
-              <BotonSuave
+              </button>
+              <button
                 type="button"
                 aria-pressed={form.tipo === "salida"}
                 onClick={() => { setForm({ ...form, tipo: "salida", motivo: "Venta" }); setMotivoOtro(""); }}
-                className={`rounded-[10px] border px-3 py-2 text-sm font-medium transition-colors ${form.tipo === "salida" ? "border-teal bg-teal/10 text-teal" : "border-line text-ink-soft hover:bg-canvas"}`}
+                className={`rounded-[10px] border px-3 py-2 text-sm font-semibold transition-colors ${form.tipo === "salida" ? "border-teal bg-teal text-white shadow-sm" : "border-line bg-panel text-ink-soft hover:bg-canvas"}`}
               >
                 Salida
-              </BotonSuave>
+              </button>
             </div>
 
             <label className="block">
@@ -161,18 +158,18 @@ function Movimientos() {
               </span>
               <input
                 type="date"
-                value={form.fecha}
-                onChange={(e) => { setForm({ ...form, fecha: e.target.value }); setFechaManual(true); }}
-                className="campo mt-1"
+                value={hoyColombia()}
+                disabled
+                aria-label="Fecha automática de registro"
+                className="campo mt-1 cursor-not-allowed select-none bg-zinc-200! text-zinc-800! opacity-100!"
               />
-              <p className="mt-1 text-[11px] text-ink-faint">Si no cambias la fecha, se guarda también la hora real del registro.</p>
             </label>
 
             <label className="block">
               <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-faint">
                 Usuario
               </span>
-              <input value={auth.nombre} readOnly className="campo mt-1" />
+              <input value={auth.nombre} disabled aria-label="Usuario responsable automático" className="campo mt-1 cursor-not-allowed select-none bg-zinc-200! text-zinc-800! opacity-100!" />
             </label>
 
             <label className="block text-xs text-ink-soft">Motivo
