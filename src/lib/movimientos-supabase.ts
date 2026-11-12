@@ -40,7 +40,8 @@ export function parametrosMovimiento(m: NuevoMovimiento) {
     p_producto_id: m.productoId,
     p_tipo: m.tipo,
     p_cantidad: m.cantidad,
-    p_fecha: fechaMovimiento(m.fecha),
+    // La base usa siempre su reloj oficial; no se envían fechas elegidas por el cliente.
+    p_fecha: null,
     // La base ignora este valor y toma el responsable de auth.uid() y profiles; se envía null solo para coincidir con la firma.
     p_usuario_responsable: null,
     p_motivo: opcional(m.motivo),
