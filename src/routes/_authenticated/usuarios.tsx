@@ -6,7 +6,7 @@ import { AppShell, Panel, BotonPrimario, BotonSuave, Etiqueta } from "@/componen
 import { useAuth } from "@/lib/auth";
 import { crearTrabajador, listarUsuarios, asignarRol, cambiarAccesoTrabajador } from "@/lib/users.functions";
 import { cuentaTrabajador, puedeGestionar } from "@/lib/auth-rules";
-import { solicitarPinAdministrador, confirmarCambioCredencial } from "@/lib/seguridad-usuarios.functions";
+import { solicitarPinAdministrador, verificarPinAdministrador, confirmarCambioCredencial } from "@/lib/seguridad-usuarios.functions";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   // El layout privado comprueba la sesión y proporciona context.access.
@@ -31,6 +31,7 @@ function Usuarios() {
   const assign = useServerFn(asignarRol);
   const changeAccess = useServerFn(cambiarAccesoTrabajador);
   const solicitarPin = useServerFn(solicitarPinAdministrador);
+  const verificarPin = useServerFn(verificarPinAdministrador);
   const confirmarCredencial = useServerFn(confirmarCambioCredencial);
   const query = useQuery({ queryKey: ["usuarios", auth.user?.id], queryFn: () => list(), enabled: auth.rol === "administrador", retry: false });
   const [form, setForm] = useState({ nombre: "", correo: "", password: "" });
@@ -38,12 +39,20 @@ function Usuarios() {
   const creando = useRef(false);
   const [mensaje, setMensaje] = useState<{ ok: boolean; text: string } | null>(null);
   const [confirmar, setConfirmar] = useState<{id:string;nombre:string;activo:boolean}|null>(null);
-  const [credencial, setCredencial] = useState<{
+  type CredencialPendiente = {
     userId: string; nombre: string; accion: "correo" | "contrasena";
-    estado: "preparar" | "codigo"; correo: string; clave: string; pin: string;
-  } | null>(null);
+    estado: "preparar" | "codigo" | "autorizado";
+    correo: string; clave: string; pin: string;
+    permisoTemporal: string; caducaEn: number;
+  };
+  const [credencial, setCredencial] = useState<CredencialPendiente | null>(null);
+
   function abrirCambio(userId: string, nombre: string, accion: "correo" | "contrasena", correo = "") {
-    setCredencial({ userId, nombre, accion, estado: "preparar", correo, clave: "", pin: "" });
+    setCredencial({ userId, nombre, accion, estado: "preparar", correo, clave: "", pin: "", permisoTemporal: "", caducaEn: 0 });
+    setMensaje(null);
+  }
+  function cancelarCambio() {
+    setCredencial(null);
     setMensaje(null);
   }
   async function pedirPin() {
@@ -51,16 +60,35 @@ function Usuarios() {
     setBusy(true); setMensaje(null);
     try {
       await solicitarPin({ data: { userId: credencial.userId, accion: credencial.accion } });
-      setCredencial(actual => actual ? { ...actual, estado: "codigo", pin: "" } : null);
-      setMensaje({ ok: true, text: "Código solicitado. Revisa el correo del administrador. Si llega un enlace en lugar de un PIN, configura el correo OTP de Supabase." });
+      setCredencial(actual => actual ? { ...actual, estado: "codigo", pin: "", clave: "", permisoTemporal: "", caducaEn: 0 } : null);
+      setMensaje({ ok: true, text: "PIN enviado al correo administrativo. Introduce el código para continuar." });
     } catch (e) {
       setMensaje({ ok: false, text: e instanceof Error ? e.message : "No se pudo enviar el PIN." });
     } finally { setBusy(false); }
   }
-  async function guardarCredencial() {
-    if (!credencial || busy) return;
+  async function autorizarCambio() {
+    if (!credencial || busy || credencial.estado !== "codigo") return;
     if (!/^\d{6}$/.test(credencial.pin)) {
-      setMensaje({ ok: false, text: "Escribe el código de seis dígitos que llegó al correo administrativo." }); return;
+      setMensaje({ ok: false, text: "Introduce un PIN de seis dígitos." }); return;
+    }
+    setBusy(true); setMensaje(null);
+    try {
+      const result = await verificarPin({ data: { userId: credencial.userId, accion: credencial.accion, codigo: credencial.pin } });
+      if (!result.autorizado) throw new Error("No se pudo autorizar la operación.");
+      setCredencial(actual => actual ? {
+        ...actual, estado: "autorizado", pin: "", clave: "", permisoTemporal: result.permisoTemporal, caducaEn: result.caducaEn,
+      } : null);
+      setMensaje({ ok: true, text: "Identidad validada. Ahora puedes introducir el dato nuevo. La autorización dura dos minutos." });
+    } catch (e) {
+      setMensaje({ ok: false, text: e instanceof Error ? e.message : "PIN incorrecto o vencido." });
+    } finally { setBusy(false); }
+  }
+  async function guardarCredencial() {
+    if (!credencial || busy || credencial.estado !== "autorizado") return;
+    if (Date.now() >= credencial.caducaEn) {
+      setCredencial(actual => actual ? { ...actual, estado: "preparar", pin: "", clave: "", permisoTemporal: "", caducaEn: 0 } : null);
+      setMensaje({ ok: false, text: "La autorización venció. Solicita otro PIN." });
+      return;
     }
     if (credencial.accion === "contrasena" && (credencial.clave.length < 12 || credencial.clave.length > 128)) {
       setMensaje({ ok: false, text: "La contraseña debe tener entre 12 y 128 caracteres." }); return;
@@ -71,16 +99,16 @@ function Usuarios() {
     setBusy(true); setMensaje(null);
     try {
       const data = credencial.accion === "correo"
-        ? { accion: "correo" as const, userId: credencial.userId, codigo: credencial.pin, nuevoCorreo: credencial.correo.trim() }
-        : { accion: "contrasena" as const, userId: credencial.userId, codigo: credencial.pin, nuevaContrasena: credencial.clave };
+        ? { accion: "correo" as const, userId: credencial.userId, permisoTemporal: credencial.permisoTemporal, nuevoCorreo: credencial.correo.trim() }
+        : { accion: "contrasena" as const, userId: credencial.userId, permisoTemporal: credencial.permisoTemporal, nuevaContrasena: credencial.clave };
       const resultado = await confirmarCredencial({ data });
       setMensaje({ ok: true, text: resultado.mensaje });
       setCredencial(null);
       await query.refetch();
     } catch (e) {
       setMensaje({ ok: false, text: e instanceof Error ? e.message : "No se pudo actualizar la credencial." });
-      // El PIN de un solo uso puede haberse consumido: solicitar otro para reintentar.
-      setCredencial(actual => actual ? { ...actual, estado: "preparar", pin: "" } : null);
+      // Ante un error, invalidamos el permiso visible y exigimos otro PIN.
+      setCredencial(actual => actual ? { ...actual, estado: "preparar", pin: "", clave: "", permisoTemporal: "", caducaEn: 0 } : null);
     } finally { setBusy(false); }
   }
   if (auth.rol !== "administrador") return <AppShell titulo="Usuarios" subtitulo="Administración"><p role="alert" className="text-sm text-rose">Solo el administrador puede gestionar usuarios.</p></AppShell>;
@@ -189,44 +217,61 @@ function Usuarios() {
             <h3 className="font-display text-base font-semibold">
               {credencial.accion === "correo" ? "Cambiar correo" : "Restablecer contraseña"} · {credencial.nombre}
             </h3>
-            <BotonSuave disabled={busy} onClick={() => { setCredencial(null); setMensaje(null); }}>Cancelar</BotonSuave>
+            <BotonSuave disabled={busy} onClick={cancelarCambio}>Cancelar</BotonSuave>
           </div>
           <p className="text-sm text-ink-soft">
-            La autorización se verifica exclusivamente con un PIN enviado al correo del administrador. No se envía correo al trabajador.
+            Solo el administrador puede autorizar esta operación. El PIN llega a su correo, no al del trabajador.
           </p>
-          {credencial.accion === "correo" ? (
-            <label className="block max-w-xl text-sm">Correo nuevo del trabajador
-              <input type="email" autoComplete="off" className="campo mt-1" value={credencial.correo} disabled={busy}
-                onChange={e => setCredencial(a => a ? { ...a, correo: e.target.value } : null)} />
-              <span className="mt-1 block text-xs text-amber">La dirección se marcará confirmada administrativamente. Asegúrate de escribirla correctamente.</span>
-            </label>
-          ) : (
-            <label className="block max-w-xl text-sm">Contraseña nueva (mínimo 12 caracteres)
-              <input type="password" minLength={12} maxLength={128} autoComplete="new-password" className="campo mt-1"
-                value={credencial.clave} disabled={busy}
-                onChange={e => setCredencial(a => a ? { ...a, clave: e.target.value } : null)} />
-            </label>
-          )}
-          {credencial.estado === "preparar" ? (
-            <div className="flex flex-wrap items-center gap-3">
+          <div className="flex flex-wrap gap-2 text-xs">
+            <span className={credencial.estado === "preparar" ? "font-semibold text-brand" : "text-teal"}>1. Solicitar PIN</span>
+            <span aria-hidden="true">→</span>
+            <span className={credencial.estado === "codigo" ? "font-semibold text-brand" : credencial.estado === "autorizado" ? "text-teal" : "text-ink-faint"}>2. Verificar identidad</span>
+            <span aria-hidden="true">→</span>
+            <span className={credencial.estado === "autorizado" ? "font-semibold text-brand" : "text-ink-faint"}>3. Guardar cambio</span>
+          </div>
+          {credencial.estado === "preparar" && (
+            <div className="space-y-2">
+              <p className="text-xs text-ink-soft">Primero verificaremos tu identidad. Todavía no se solicitará la contraseña ni el correo nuevo.</p>
               <BotonPrimario disabled={busy} onClick={() => void pedirPin()}>
                 {busy ? "Enviando…" : "Enviar PIN al correo del administrador"}
               </BotonPrimario>
-              <p className="text-xs text-ink-faint">El código expira y solo puede utilizarse una vez.</p>
             </div>
-          ) : (
+          )}
+          {credencial.estado === "codigo" && (
             <div className="max-w-xl space-y-3">
-              <label className="block text-sm">PIN de seis dígitos
+              <label className="block text-sm">PIN recibido (seis dígitos)
                 <input inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code"
                   className="campo mt-1" value={credencial.pin} disabled={busy} placeholder="000000"
                   onChange={e => setCredencial(a => a ? { ...a, pin: e.target.value.replace(/\D/g, "").slice(0, 6) } : null)} />
               </label>
               <div className="flex flex-wrap gap-2">
-                <BotonPrimario disabled={busy || credencial.pin.length !== 6} onClick={() => void guardarCredencial()}>
-                  {busy ? "Verificando…" : "Validar PIN y guardar cambio"}
+                <BotonPrimario disabled={busy || credencial.pin.length !== 6} onClick={() => void autorizarCambio()}>
+                  {busy ? "Validando…" : "Validar PIN"}
                 </BotonPrimario>
                 <BotonSuave disabled={busy} onClick={() => void pedirPin()}>Reenviar PIN</BotonSuave>
               </div>
+            </div>
+          )}
+          {credencial.estado === "autorizado" && (
+            <div className="max-w-xl space-y-3">
+              <p className="text-sm font-medium text-teal">PIN correcto. Autorización temporal activada durante dos minutos.</p>
+              {credencial.accion === "correo" ? (
+                <label className="block text-sm">Nuevo correo del trabajador
+                  <input type="email" autoComplete="off" className="campo mt-1"
+                    value={credencial.correo} disabled={busy}
+                    onChange={e => setCredencial(a => a ? { ...a, correo: e.target.value } : null)} />
+                  <span className="mt-1 block text-xs text-amber">El correo nuevo se marcará confirmado administrativamente. Revisa la dirección antes de guardar.</span>
+                </label>
+              ) : (
+                <label className="block text-sm">Nueva contraseña (mínimo 12 caracteres)
+                  <input type="password" minLength={12} maxLength={128} autoComplete="new-password"
+                    className="campo mt-1" value={credencial.clave} disabled={busy}
+                    onChange={e => setCredencial(a => a ? { ...a, clave: e.target.value } : null)} />
+                </label>
+              )}
+              <BotonPrimario disabled={busy} onClick={() => void guardarCredencial()}>
+                {busy ? "Guardando…" : credencial.accion === "correo" ? "Guardar correo nuevo" : "Guardar contraseña nueva"}
+              </BotonPrimario>
             </div>
           )}
         </section>
