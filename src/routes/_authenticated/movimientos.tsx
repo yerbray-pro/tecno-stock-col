@@ -49,12 +49,10 @@ function Movimientos() {
     productoId: "",
     tipo: "salida" as "entrada" | "salida",
     cantidad: "1",
-    fecha: hoyColombia(),
     motivo: "Venta",
     observacion: "",
   });
 
-  const [fechaManual, setFechaManual] = useState(false);
   const [motivoOtro, setMotivoOtro] = useState("");
   const motivos = form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
   const lista = filtrarHistorial(movimientos, productos, filtros);
@@ -81,14 +79,13 @@ function Movimientos() {
                 productoId,
                 tipo: form.tipo,
                 cantidad,
-                // Si no se escogió otra fecha, la BD guarda now() con la hora real.
-                fecha: fechaManual ? form.fecha : "",
+                // Fecha oficial asignada en la función de Supabase.
+                fecha: "",
                 motivo,
                 observacion: form.observacion,
               });
               if (r.ok) {
-                setForm(prev => ({ ...prev, cantidad: "1", fecha: hoyColombia() }));
-                setFechaManual(false);
+                setForm(prev => ({ ...prev, cantidad: "1" }));
                 setMotivoOtro("");
               }
               setAviso(
@@ -161,11 +158,11 @@ function Movimientos() {
               </span>
               <input
                 type="date"
-                value={form.fecha}
-                onChange={(e) => { setForm({ ...form, fecha: e.target.value }); setFechaManual(true); }}
+                value={hoyColombia()}
+                disabled
+                aria-label="Fecha automática de registro"
                 className="campo mt-1"
               />
-              <p className="mt-1 text-[11px] text-ink-faint">Si no cambias la fecha, se guarda también la hora real del registro.</p>
             </label>
 
             <label className="block">
