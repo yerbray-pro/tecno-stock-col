@@ -49,12 +49,10 @@ function Movimientos() {
     productoId: "",
     tipo: "salida" as "entrada" | "salida",
     cantidad: "1",
-    fecha: hoyColombia(),
     motivo: "Venta",
     observacion: "",
   });
 
-  const [fechaManual, setFechaManual] = useState(false);
   const [motivoOtro, setMotivoOtro] = useState("");
   const motivos = form.tipo === "entrada" ? MOTIVOS_ENTRADA : MOTIVOS_SALIDA;
   const lista = filtrarHistorial(movimientos, productos, filtros);
@@ -81,14 +79,13 @@ function Movimientos() {
                 productoId,
                 tipo: form.tipo,
                 cantidad,
-                // Si no se escogió otra fecha, la BD guarda now() con la hora real.
-                fecha: fechaManual ? form.fecha : "",
+                // La fecha y hora se generan exclusivamente en Supabase.
+                fecha: "",
                 motivo,
                 observacion: form.observacion,
               });
               if (r.ok) {
-                setForm(prev => ({ ...prev, cantidad: "1", fecha: hoyColombia() }));
-                setFechaManual(false);
+                setForm(prev => ({ ...prev, cantidad: "1" }));
                 setMotivoOtro("");
               }
               setAviso(
@@ -160,12 +157,13 @@ function Movimientos() {
                 Fecha
               </span>
               <input
-                type="date"
-                value={form.fecha}
-                onChange={(e) => { setForm({ ...form, fecha: e.target.value }); setFechaManual(true); }}
-                className="campo mt-1"
+                type="text"
+                value={hoyColombia()}
+                readOnly
+                aria-label="Fecha de Colombia, asignada automáticamente"
+                className="campo mt-1 cursor-not-allowed bg-canvas text-ink-soft"
               />
-              <p className="mt-1 text-[11px] text-ink-faint">Si no cambias la fecha, se guarda también la hora real del registro.</p>
+              <p className="mt-1 text-[11px] text-ink-faint">La fecha y hora oficiales se asignan al guardar desde Supabase. Nadie puede modificarlas.</p>
             </label>
 
             <label className="block">
