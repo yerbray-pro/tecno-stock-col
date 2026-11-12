@@ -3,6 +3,7 @@ import { getRequestHeader } from "@tanstack/react-start/server";
 import { createClient } from "@supabase/supabase-js";
 import { z } from "zod";
 import { rolDesdeBase } from "./auth-rules";
+import { emitirPermisoTemporal, validarPermisoTemporal } from "./admin-autorizacion.server";
 
 /**
  * TecnoStock — gestión administrativa de credenciales.
@@ -19,17 +20,22 @@ const solicitud = z.object({
   userId: uuid,
   accion: z.enum(["correo", "contrasena"]),
 });
+const verificacion = z.object({
+  userId: uuid,
+  accion: z.enum(["correo", "contrasena"]),
+  codigo: z.string().regex(/^\d{6}$/, "Escribe el PIN de seis dígitos."),
+});
 const cambio = z.discriminatedUnion("accion", [
   z.object({
     accion: z.literal("correo"),
     userId: uuid,
-    codigo: z.string().regex(/^\d{6}$/, "Escribe el PIN de seis dígitos."),
+    permisoTemporal: z.string().min(20).max(3000),
     nuevoCorreo: z.string().trim().email("Correo inválido.").max(254),
   }),
   z.object({
     accion: z.literal("contrasena"),
     userId: uuid,
-    codigo: z.string().regex(/^\d{6}$/, "Escribe el PIN de seis dígitos."),
+    permisoTemporal: z.string().min(20).max(3000),
     nuevaContrasena: z.string().min(12, "La contraseña debe tener al menos 12 caracteres.").max(128),
   }),
 ]);
@@ -103,21 +109,39 @@ export const solicitarPinAdministrador = createServerFn({ method: "POST" })
     return { ok: true, destino: "correo del administrador" };
   });
 
-/** Confirma el PIN de Supabase antes de utilizar una operación privilegiada. */
+/** Etapa 2: confirma el PIN sin recibir ni cambiar todavía ninguna credencial. */
+export const verificarPinAdministrador = createServerFn({ method: "POST" })
+  .inputValidator((input: unknown) => verificacion.parse(input))
+  .handler(async ({ data }) => {
+    const ctx = await autenticarAdministrador();
+    await validarDestino(ctx, data.userId, data.accion);
+    if (!ctx.secret) throw new Error("Falta la clave administrativa en el servidor.");
+    const { data: verificado, error } = await clientePublico(ctx.url, ctx.publishable)
+      .auth.verifyOtp({ email: ctx.adminEmail, token: data.codigo, type: "email" });
+    if (error || !verificado.user || !verificado.session ||
+      verificado.user.id !== ctx.adminUserId)
+      throw new Error("PIN incorrecto o caducado. Solicita uno nuevo.");
+
+    // Firmado solo en el servidor: destinado a esta cuenta y acción.
+    const permiso = emitirPermisoTemporal({
+      adminId: ctx.adminUserId, destino: data.userId,
+      accion: data.accion, secreto: ctx.secret,
+    });
+    return { autorizado: true, permisoTemporal: permiso.token, caducaEn: permiso.caducaEn };
+  });
+
+/** Etapa 3: valida el JWT temporal y aplica únicamente el cambio autorizado. */
 export const confirmarCambioCredencial = createServerFn({ method: "POST" })
   .inputValidator((input: unknown) => cambio.parse(input))
   .handler(async ({ data }) => {
     const ctx = await autenticarAdministrador();
     await validarDestino(ctx, data.userId, data.accion);
     if (!ctx.secret) throw new Error("Falta la clave administrativa en el servidor.");
-
-    // Supabase valida el PIN de un solo uso, su caducidad y que pertenece al admin.
-    const { data: verificacion, error: errorPin } = await clientePublico(ctx.url, ctx.publishable)
-      .auth.verifyOtp({ email: ctx.adminEmail, token: data.codigo, type: "email" });
-    if (errorPin || !verificacion.user || !verificacion.session ||
-        verificacion.user.id !== ctx.adminUserId) {
-      throw new Error("PIN incorrecto o caducado. Solicita un código nuevo.");
-    }
+    validarPermisoTemporal({
+      token: data.permisoTemporal,
+      adminId: ctx.adminUserId, destino: data.userId,
+      accion: data.accion, secreto: ctx.secret,
+    });
 
     const admin = createClient(ctx.url, ctx.secret, {
       auth: { persistSession: false, autoRefreshToken: false },
