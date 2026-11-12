@@ -68,8 +68,8 @@ function Usuarios() {
   }
   async function autorizarCambio() {
     if (!credencial || busy || credencial.estado !== "codigo") return;
-    if (!/^\d{6}$/.test(credencial.pin)) {
-      setMensaje({ ok: false, text: "Introduce un PIN de seis dígitos." }); return;
+    if (!/^\d{6,10}$/.test(credencial.pin)) {
+      setMensaje({ ok: false, text: "Introduce el PIN completo, de 6 a 10 dígitos, tal como llegó al correo." }); return;
     }
     setBusy(true); setMensaje(null);
     try {
@@ -239,13 +239,13 @@ function Usuarios() {
           )}
           {credencial.estado === "codigo" && (
             <div className="max-w-xl space-y-3">
-              <label className="block text-sm">PIN recibido (seis dígitos)
-                <input inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code"
-                  className="campo mt-1" value={credencial.pin} disabled={busy} placeholder="000000"
-                  onChange={e => setCredencial(a => a ? { ...a, pin: e.target.value.replace(/\D/g, "").slice(0, 6) } : null)} />
+              <label className="block text-sm">PIN recibido (de 6 a 10 dígitos)
+                <input inputMode="numeric" pattern="[0-9]{6,10}" maxLength={10} autoComplete="one-time-code"
+                  className="campo mt-1" value={credencial.pin} disabled={busy} placeholder="Código completo del correo"
+                  onChange={e => setCredencial(a => a ? { ...a, pin: e.target.value.replace(/\D/g, "").slice(0, 10) } : null)} />
               </label>
               <div className="flex flex-wrap gap-2">
-                <BotonPrimario disabled={busy || credencial.pin.length !== 6} onClick={() => void autorizarCambio()}>
+                <BotonPrimario disabled={busy || credencial.pin.length < 6 || credencial.pin.length > 10} onClick={() => void autorizarCambio()}>
                   {busy ? "Validando…" : "Validar PIN"}
                 </BotonPrimario>
                 <BotonSuave disabled={busy} onClick={() => void pedirPin()}>Reenviar PIN</BotonSuave>
