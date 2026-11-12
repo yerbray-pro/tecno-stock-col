@@ -7,6 +7,8 @@ import { useAuth } from "@/lib/auth";
 import { crearTrabajador, listarUsuarios, asignarRol, cambiarAccesoTrabajador } from "@/lib/users.functions";
 import { cuentaTrabajador, puedeGestionar } from "@/lib/auth-rules";
 import { solicitarPinAdministrador, verificarPinAdministrador, confirmarCambioCredencial } from "@/lib/seguridad-usuarios.functions";
+import { InputOTP, InputOTPGroup, InputOTPSlot } from "@/components/ui/input-otp";
+import { REGEXP_ONLY_DIGITS } from "input-otp";
 
 export const Route = createFileRoute("/_authenticated/usuarios")({
   // El layout privado comprueba la sesión y proporciona context.access.
@@ -68,8 +70,8 @@ function Usuarios() {
   }
   async function autorizarCambio() {
     if (!credencial || busy || credencial.estado !== "codigo") return;
-    if (!/^\d{6,10}$/.test(credencial.pin)) {
-      setMensaje({ ok: false, text: "Introduce el PIN completo, de 6 a 10 dígitos, tal como llegó al correo." }); return;
+    if (!/^\d{6}$/.test(credencial.pin)) {
+      setMensaje({ ok: false, text: "Introduce exactamente los 6 dígitos del PIN." }); return;
     }
     setBusy(true); setMensaje(null);
     try {
@@ -239,13 +241,31 @@ function Usuarios() {
           )}
           {credencial.estado === "codigo" && (
             <div className="max-w-xl space-y-3">
-              <label className="block text-sm">PIN recibido (de 6 a 10 dígitos)
-                <input inputMode="numeric" pattern="[0-9]{6,10}" maxLength={10} autoComplete="one-time-code"
-                  className="campo mt-1" value={credencial.pin} disabled={busy} placeholder="Código completo del correo"
-                  onChange={e => setCredencial(a => a ? { ...a, pin: e.target.value.replace(/\D/g, "").slice(0, 10) } : null)} />
-              </label>
+              <div className="space-y-2">
+                <p className="text-sm font-medium">Introduce el PIN de 6 dígitos</p>
+                <InputOTP
+                  maxLength={6}
+                  pattern={REGEXP_ONLY_DIGITS}
+                  autoComplete="one-time-code"
+                  autoFocus
+                  value={credencial.pin}
+                  disabled={busy}
+                  aria-label="PIN de seguridad de seis dígitos"
+                  onChange={(pin) => setCredencial(actual => actual ? { ...actual, pin } : null)}
+                >
+                  <InputOTPGroup className="gap-2">
+                    {Array.from({ length: 6 }, (_, index) => (
+                      <InputOTPSlot
+                        key={index}
+                        index={index}
+                        className="h-12 w-10 rounded-lg border border-line bg-panel text-lg font-semibold sm:w-12"
+                      />
+                    ))}
+                  </InputOTPGroup>
+                </InputOTP>
+              </div>
               <div className="flex flex-wrap gap-2">
-                <BotonPrimario disabled={busy || credencial.pin.length < 6 || credencial.pin.length > 10} onClick={() => void autorizarCambio()}>
+                <BotonPrimario disabled={busy || credencial.pin.length !== 6} onClick={() => void autorizarCambio()}>
                   {busy ? "Validando…" : "Validar PIN"}
                 </BotonPrimario>
                 <BotonSuave disabled={busy} onClick={() => void pedirPin()}>Reenviar PIN</BotonSuave>
