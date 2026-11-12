@@ -219,7 +219,7 @@ function Usuarios() {
               <label className="block text-sm">PIN de seis dígitos
                 <input inputMode="numeric" pattern="[0-9]{6}" maxLength={6} autoComplete="one-time-code"
                   className="campo mt-1" value={credencial.pin} disabled={busy} placeholder="000000"
-                  onChange={e => setCredencial(a => a ? { ...a, pin: e.target.value.replace(/\\D/g, "").slice(0, 6) } : null)} />
+                  onChange={e => setCredencial(a => a ? { ...a, pin: e.target.value.replace(/\D/g, "").slice(0, 6) } : null)} />
               </label>
               <div className="flex flex-wrap gap-2">
                 <BotonPrimario disabled={busy || credencial.pin.length !== 6} onClick={() => void guardarCredencial()}>
