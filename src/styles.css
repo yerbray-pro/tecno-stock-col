@@ -185,3 +185,72 @@
   *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .rise { animation: none; }
 }
+
+
+/* Microinteracciones ligeras: solo presentación; no modifican la lógica del inventario. */
+@keyframes ts-soft-enter {
+  from { opacity: 0; transform: translateY(8px) scale(0.985); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
+}
+@keyframes ts-message-enter {
+  from { opacity: 0; transform: translateY(6px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes ts-badge-pop {
+  0% { opacity: 0; transform: scale(0.75); }
+  75% { opacity: 1; transform: scale(1.07); }
+  100% { opacity: 1; transform: scale(1); }
+}
+
+@layer components {
+  .ts-nav-link {
+    position: relative;
+    transition: transform 180ms ease, background-color 180ms ease, color 180ms ease;
+  }
+  .ts-nav-link::before {
+    content: "";
+    position: absolute;
+    left: 0;
+    top: 22%;
+    bottom: 22%;
+    width: 3px;
+    border-radius: 999px;
+    background: var(--color-brand);
+    opacity: 0;
+    transform: scaleY(0);
+    transition: transform 180ms ease, opacity 180ms ease;
+  }
+  .ts-nav-link[aria-current="page"]::before {
+    opacity: 1;
+    transform: scaleY(1);
+  }
+  .ts-nav-link:hover { transform: translateX(2px); }
+  .ts-nav-link:focus-visible,
+  .ts-theme-button:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: 2px;
+  }
+  .ts-card {
+    transition: transform 180ms ease, box-shadow 180ms ease;
+  }
+  .ts-card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 0 0 1px var(--panel-ring), 0 9px 20px -14px color-mix(in oklab, var(--ink) 30%, transparent);
+  }
+  .ts-quick-chat-enter, .ts-alerts-enter {
+    animation: ts-soft-enter 200ms ease-out both;
+    transform-origin: bottom right;
+  }
+  .ts-message-enter, .ts-response-enter {
+    animation: ts-message-enter 180ms ease-out both;
+  }
+  .ts-badge-enter { animation: ts-badge-pop 260ms ease-out both; }
+  .ts-theme-icon { transition: transform 220ms ease; }
+  .ts-theme-button:hover .ts-theme-icon { transform: rotate(16deg) scale(1.08); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .ts-card:hover, .ts-nav-link:hover, .ts-theme-button:hover .ts-theme-icon {
+    transform: none !important;
+  }
+}
