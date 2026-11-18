@@ -21,8 +21,8 @@ export function BotonTema({ className = "" }: { className?: string }) {
   return (
     <button type="button" aria-label={etiqueta} title={etiqueta}
       onClick={() => { const n = !oscuro; aplicarTema(n ? "oscuro" : "claro"); setOscuro(n); }}
-      className={`grid size-10 shrink-0 place-items-center rounded-lg border border-line bg-panel text-ink-soft hover:text-ink hover:border-brand/40 ${className}`}>
-      {oscuro === null ? <span className="size-4" /> : oscuro ? <Sun className="size-4" /> : <Moon className="size-4" />}
+      className={`ts-theme-button grid size-10 shrink-0 place-items-center rounded-lg border border-line bg-panel text-ink-soft hover:text-ink hover:border-brand/40 ${className}`}>
+      {oscuro === null ? <span className="size-4" /> : oscuro ? <Sun className="ts-theme-icon size-4" /> : <Moon className="ts-theme-icon size-4" />}
     </button>
   );
 }
