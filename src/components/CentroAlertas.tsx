@@ -26,7 +26,7 @@ export function CentroAlertas() {
         aria-expanded={abierto} title="Ver alertas" onClick={() => setAbierto(v => !v)}
         className="relative flex size-9 items-center justify-center rounded-lg border border-line bg-panel text-ink-soft hover:bg-canvas">
         <Bell className="size-[18px]" />
-        {total > 0 && <span className="absolute -right-2 -top-2 min-w-5 rounded-full bg-rose px-1 py-0.5 text-center text-[10px] font-bold text-white">
+        {total > 0 && <span className="absolute -right-2 -top-2 min-w-5 rounded-full bg-rose px-1 py-0.5 text-center text-[10px] font-bold text-primary-foreground">
           {total > 99 ? "99+" : total}
         </span>}
       </button>

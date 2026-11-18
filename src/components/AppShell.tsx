@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { BotonTema } from "@/components/BotonTema";
 import { useEffect, useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -128,6 +129,7 @@ export function AppShell({
               <div className="order-3 flex w-full min-w-0 items-center justify-between gap-2 sm:order-none sm:w-auto sm:justify-end">
                 {acciones && <div className="min-w-0 shrink-0">{acciones}</div>}
                 <div className="ml-auto flex shrink-0 items-center gap-2">
+                  <BotonTema />
                   <CentroAlertas />
                   <span title={auth.nombre} className="hidden max-w-32 truncate text-xs text-ink-soft xl:block">{auth.nombre}</span>
                   <BotonSuave disabled={leaving} onClick={async () => {
@@ -171,7 +173,7 @@ export function BotonPrimario({
   return (
     <button
       {...props}
-      className={`inline-flex items-center gap-2 rounded-[10px] bg-brand px-3.5 py-2 text-sm font-medium text-panel ring-1 ring-inset ring-brand/30 transition-colors hover:bg-brand/90 disabled:opacity-50 ${props.className ?? ""}`}
+      className={`inline-flex items-center gap-2 rounded-[10px] bg-brand px-3.5 py-2 text-sm font-medium text-primary-foreground ring-1 ring-inset ring-brand/30 transition-colors hover:bg-brand/90 disabled:opacity-50 ${props.className ?? ""}`}
     >
       {children}
     </button>

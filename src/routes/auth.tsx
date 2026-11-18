@@ -1,4 +1,5 @@
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
+import { BotonTema } from "@/components/BotonTema";
 import { useState } from "react";
 import { BotonPrimario, BotonSuave } from "@/components/AppShell";
 import { supabase } from "@/lib/supabase";
@@ -21,7 +22,8 @@ function Login() {
   const [password, setPassword] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  return <main className="grid min-h-screen place-items-center bg-canvas px-5 text-ink">
+  return <main className="relative grid min-h-screen place-items-center bg-canvas px-5 text-ink">
+    <BotonTema className="absolute right-4 top-4" />
     <div className="w-full max-w-sm space-y-6">
       <div><div className="mb-4 grid size-10 place-items-center rounded-lg bg-ink font-display text-xl text-panel">T</div><h1 className="font-display text-3xl font-semibold">TecnoStock</h1><p className="mt-2 text-sm text-ink-soft">Iniciar sesión</p></div>
       <form className="space-y-4" onSubmit={async (e) => {

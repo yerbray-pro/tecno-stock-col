@@ -122,7 +122,7 @@ function Movimientos() {
                 type="button"
                 aria-pressed={form.tipo === "entrada"}
                 onClick={() => { setForm({ ...form, tipo: "entrada", motivo: "Ingreso manual" }); setMotivoOtro(""); }}
-                className={`rounded-[10px] border px-3 py-2 text-sm font-semibold transition-colors ${form.tipo === "entrada" ? "border-brand bg-brand text-white shadow-sm" : "border-line bg-panel text-ink-soft hover:bg-canvas"}`}
+                className={`rounded-[10px] border px-3 py-2 text-sm font-semibold transition-colors ${form.tipo === "entrada" ? "border-brand bg-brand text-primary-foreground shadow-sm" : "border-line bg-panel text-ink-soft hover:bg-canvas"}`}
               >
                 Entrada
               </button>
@@ -130,7 +130,7 @@ function Movimientos() {
                 type="button"
                 aria-pressed={form.tipo === "salida"}
                 onClick={() => { setForm({ ...form, tipo: "salida", motivo: "Venta" }); setMotivoOtro(""); }}
-                className={`rounded-[10px] border px-3 py-2 text-sm font-semibold transition-colors ${form.tipo === "salida" ? "border-teal bg-teal text-white shadow-sm" : "border-line bg-panel text-ink-soft hover:bg-canvas"}`}
+                className={`rounded-[10px] border px-3 py-2 text-sm font-semibold transition-colors ${form.tipo === "salida" ? "border-teal bg-teal text-primary-foreground shadow-sm" : "border-line bg-panel text-ink-soft hover:bg-canvas"}`}
               >
                 Salida
               </button>
@@ -161,7 +161,7 @@ function Movimientos() {
                 value={hoyColombia()}
                 disabled
                 aria-label="Fecha automática de registro"
-                className="campo mt-1 cursor-not-allowed select-none bg-zinc-200! text-zinc-800! opacity-100!"
+                className="campo mt-1 cursor-not-allowed select-none bg-locked! text-locked-ink! opacity-100!"
               />
             </label>
 
@@ -169,7 +169,7 @@ function Movimientos() {
               <span className="text-[11px] font-medium uppercase tracking-[0.14em] text-ink-faint">
                 Usuario
               </span>
-              <input value={auth.nombre} disabled aria-label="Usuario responsable automático" className="campo mt-1 cursor-not-allowed select-none bg-zinc-200! text-zinc-800! opacity-100!" />
+              <input value={auth.nombre} disabled aria-label="Usuario responsable automático" className="campo mt-1 cursor-not-allowed select-none bg-locked! text-locked-ink! opacity-100!" />
             </label>
 
             <label className="block text-xs text-ink-soft">Motivo

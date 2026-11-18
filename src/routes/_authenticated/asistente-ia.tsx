@@ -76,7 +76,7 @@ function AsistenteIA() {
           </div>
         </div>}
         {mensajes.map((m,i) => <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
-          <div className={m.role === "user" ? "max-w-[90%] whitespace-pre-wrap rounded-xl bg-brand px-4 py-3 text-sm text-white" :
+          <div className={m.role === "user" ? "max-w-[90%] whitespace-pre-wrap rounded-xl bg-brand px-4 py-3 text-sm text-primary-foreground" :
             "max-w-[95%] whitespace-pre-wrap rounded-xl bg-canvas px-4 py-3 text-sm leading-relaxed text-ink"}>
             {m.text}
           </div>

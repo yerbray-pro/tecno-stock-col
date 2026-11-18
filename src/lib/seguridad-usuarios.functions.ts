@@ -47,7 +47,7 @@ type AuthContext = {
   url: string;
   publishable: string;
   secret: string | undefined;
-  actor: ReturnType<typeof createClient>;
+  actor: ReturnType<typeof createClient<any>>;
 };
 
 /** Cada solicitud verifica la sesión y el rol real desde Supabase, no desde el formulario. */

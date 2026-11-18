@@ -45,6 +45,8 @@
   --color-amber: var(--amber);
   --color-rose: var(--rose);
   --color-panel-outline: var(--panel-outline);
+  --color-locked: var(--locked);
+  --color-locked-ink: var(--locked-ink);
 
   --font-display: "Space Grotesk", ui-sans-serif, sans-serif;
   --font-sans: "Inter", ui-sans-serif, system-ui, sans-serif;
@@ -65,6 +67,10 @@
   --amber: oklch(0.573 0.126 70.5);
   --rose: oklch(0.545 0.161 25.6);
   --panel-outline: color-mix(in oklab, var(--ink) 8%, transparent);
+  --panel-ring: color-mix(in oklab, black 5%, transparent);
+  --locked: oklch(0.92 0.004 286);
+  --locked-ink: oklch(0.274 0.006 286);
+  color-scheme: light;
 
   --background: var(--canvas);
   --foreground: var(--ink);
@@ -85,6 +91,26 @@
   --border: var(--line);
   --input: var(--line);
   --ring: var(--brand);
+}
+
+/* Modo oscuro: azul noche y grafito, paneles un poco más claros, acentos azul y teal. */
+.dark {
+  color-scheme: dark;
+  --ink: oklch(0.94 0.008 250);
+  --ink-soft: oklch(0.78 0.015 250);
+  --ink-faint: oklch(0.64 0.018 250);
+  --canvas: oklch(0.185 0.022 258);
+  --panel: oklch(0.235 0.024 258);
+  --line: oklch(0.33 0.024 258);
+  --brand: oklch(0.64 0.17 260);
+  --teal: oklch(0.7 0.11 183);
+  --amber: oklch(0.78 0.13 75);
+  --rose: oklch(0.7 0.16 22);
+  --panel-ring: color-mix(in oklab, white 8%, transparent);
+  --locked: oklch(0.3 0.02 258);
+  --locked-ink: oklch(0.88 0.01 250);
+  --primary-foreground: oklch(0.99 0 0);
+  --destructive-foreground: oklch(0.99 0 0);
 }
 
 @layer base {
@@ -118,7 +144,7 @@
 @utility panel {
   background-color: var(--color-panel);
   border-radius: 14px;
-  box-shadow: 0 0 0 1px color-mix(in oklab, black 5%, transparent);
+  box-shadow: 0 0 0 1px var(--panel-ring);
 }
 
 @utility campo {
@@ -137,6 +163,25 @@
   }
 }
 
+/* Transición suave de colores solo durante el cambio de tema. */
+.theme-transition, .theme-transition *, .theme-transition *::before, .theme-transition *::after {
+  transition: background-color 220ms ease, border-color 220ms ease, color 220ms ease, fill 220ms ease, box-shadow 220ms ease !important;
+}
+
+@layer base {
+  button, a, .panel { transition-property: color, background-color, border-color, box-shadow, transform, opacity; transition-duration: 160ms; transition-timing-function: ease; }
+  .panel:hover { box-shadow: 0 0 0 1px var(--panel-ring), 0 4px 14px -8px color-mix(in oklab, var(--ink) 25%, transparent); }
+  button:not(:disabled):active { transform: translateY(1px); }
+  [role="dialog"], [role="menu"], [data-radix-popper-content-wrapper] > * { animation: pop-in 160ms ease-out both; }
+  main { animation: rise 0.28s ease both; }
+}
+
+@keyframes pop-in {
+  from { opacity: 0; transform: translateY(-4px) scale(0.98); }
+  to { opacity: 1; transform: none; }
+}
+
 @media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after { animation-duration: 0.01ms !important; animation-iteration-count: 1 !important; transition-duration: 0.01ms !important; }
   .rise { animation: none; }
 }
