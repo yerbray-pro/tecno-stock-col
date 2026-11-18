@@ -60,7 +60,7 @@ export function AsistenteRapido() {
   return (
     <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {abierto && (
-        <section aria-label="Chat rápido TecnoStock IA" className="flex h-[min(30rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-1.5rem))] min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
+        <section aria-label="Chat rápido TecnoStock IA" className="ts-quick-chat-enter flex h-[min(30rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-1.5rem))] min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
           <div className="flex items-center justify-between border-b border-line bg-canvas px-4 py-3">
             <div className="flex items-center gap-2">
               <Sparkles className="size-5 text-brand" />
@@ -82,7 +82,7 @@ export function AsistenteRapido() {
               </div>
             )}
             {mensajes.map((m, i) => (
-              <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+              <div key={i} className={m.role === "user" ? "ts-message-enter flex justify-end" : "ts-message-enter flex justify-start"}>
                 <p className={m.role === "user"
                   ? "max-w-[90%] whitespace-pre-wrap rounded-xl bg-brand px-3 py-2 text-xs text-primary-foreground"
                   : "max-w-[95%] whitespace-pre-wrap rounded-xl bg-canvas px-3 py-2 text-xs leading-relaxed text-ink"}>{m.text}</p>
