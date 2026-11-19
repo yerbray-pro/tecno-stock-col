@@ -55,7 +55,7 @@ export function ResumenInteligente() {
       </li>)}</ul> : <p className="mt-2">No hay salidas registradas hoy.</p>}
       {salidasHoy.length > 8 && <p className="mt-1">Y {salidasHoy.length-8} registros adicionales en Historial.</p>}
     </div>}
-    {resultado && <div className="mt-3 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg bg-canvas p-3 text-sm leading-relaxed text-ink-soft">{resultado}</div>}
+    {resultado && <div className="ts-response-enter mt-3 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg bg-canvas p-3 text-sm leading-relaxed text-ink-soft">{resultado}</div>}
     {!resultado && !error && <p className="mt-3 text-xs text-ink-soft">El resumen de hoy se calcula sin IA. Para recomendaciones explicadas por Gemini usa el botón; nunca modifica registros.</p>}
     {error && <p role="alert" className="mt-3 rounded-lg bg-rose/10 p-3 text-xs text-rose">{error}</p>}
     <div className="mt-4 flex flex-wrap items-center gap-3">
