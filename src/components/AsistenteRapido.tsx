@@ -60,7 +60,7 @@ export function AsistenteRapido() {
   return (
     <div className="fixed bottom-[max(1rem,env(safe-area-inset-bottom))] right-3 z-50 flex max-w-[calc(100vw-1.5rem)] flex-col items-end gap-3 sm:bottom-6 sm:right-6">
       {abierto && (
-        <section aria-label="Chat rápido TecnoStock IA" className="flex h-[min(30rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-1.5rem))] min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
+        <section aria-label="Chat rápido TecnoStock IA" className="ts-quick-chat-enter flex h-[min(30rem,calc(100dvh-7rem))] w-[min(24rem,calc(100vw-1.5rem))] min-h-0 flex-col overflow-hidden rounded-2xl border border-line bg-panel shadow-2xl">
           <div className="flex items-center justify-between border-b border-line bg-canvas px-4 py-3">
             <div className="flex items-center gap-2">
               <Sparkles className="size-5 text-brand" />
@@ -82,9 +82,9 @@ export function AsistenteRapido() {
               </div>
             )}
             {mensajes.map((m, i) => (
-              <div key={i} className={m.role === "user" ? "flex justify-end" : "flex justify-start"}>
+              <div key={i} className={m.role === "user" ? "ts-message-enter flex justify-end" : "ts-message-enter flex justify-start"}>
                 <p className={m.role === "user"
-                  ? "max-w-[90%] whitespace-pre-wrap rounded-xl bg-brand px-3 py-2 text-xs text-white"
+                  ? "max-w-[90%] whitespace-pre-wrap rounded-xl bg-brand px-3 py-2 text-xs text-primary-foreground"
                   : "max-w-[95%] whitespace-pre-wrap rounded-xl bg-canvas px-3 py-2 text-xs leading-relaxed text-ink"}>{m.text}</p>
               </div>
             ))}
@@ -100,7 +100,7 @@ export function AsistenteRapido() {
               placeholder="Escribe tu pregunta…" value={pregunta} maxLength={500} disabled={ocupado}
               onChange={e => setPregunta(e.target.value)} />
             <button aria-label="Enviar pregunta" disabled={!pregunta.trim() || ocupado} type="submit"
-              className="rounded-lg bg-brand p-2.5 text-white disabled:opacity-40"><Send className="size-4" /></button>
+              className="rounded-lg bg-brand p-2.5 text-primary-foreground disabled:opacity-40"><Send className="size-4" /></button>
           </form>
           <Link to="/asistente-ia" onClick={() => setAbierto(false)}
             className="flex items-center justify-center gap-1.5 border-t border-line py-2.5 text-xs font-medium text-brand">
@@ -111,7 +111,7 @@ export function AsistenteRapido() {
       <button type="button" aria-label={abierto ? "Cerrar asistente rápido" : "Abrir asistente rápido"}
         aria-expanded={abierto} title="Preguntar a TecnoStock IA"
         onClick={() => setAbierto(v => !v)}
-        className="flex min-h-11 items-center gap-2 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-white shadow-xl ring-2 ring-white/60 transition-transform hover:scale-[1.03]">
+        className="flex min-h-11 items-center gap-2 rounded-full bg-brand px-4 py-3 text-sm font-semibold text-primary-foreground shadow-xl ring-2 ring-panel/60 transition-transform hover:scale-[1.03]">
         {abierto ? <X className="size-5" /> : <MessageCircleMore className="size-5" />}
         <span>{abierto ? "Cerrar" : "Preguntar a IA"}</span>
       </button>

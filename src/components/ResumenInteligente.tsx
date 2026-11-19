@@ -13,7 +13,7 @@ export function ResumenInteligente() {
   const productos = estado.tipo === "listo" ? estado.productos : [];
   const movimientosHoy = estado.tipo === "listo" ? estado.movimientos.filter(m => fechaColombia(m.fechaHora || m.fecha) === hoy) : [];
   const salidasHoy = movimientosHoy.filter(m => m.tipo === "salida");
-  const ventasHoy = salidasHoy.filter(m => m.motivo.trim().toLowerCase() === "venta");
+  const ventasHoy = salidasHoy.filter(m => (m.motivo ?? "").trim().toLowerCase() === "venta");
   const entradasHoy = movimientosHoy.filter(m => m.tipo === "entrada");
   const unidades = (lista: typeof movimientosHoy) => lista.reduce((s,m) => s + m.cantidad, 0);
   const [resultado, setResultado] = useState("");
@@ -55,12 +55,12 @@ export function ResumenInteligente() {
       </li>)}</ul> : <p className="mt-2">No hay salidas registradas hoy.</p>}
       {salidasHoy.length > 8 && <p className="mt-1">Y {salidasHoy.length-8} registros adicionales en Historial.</p>}
     </div>}
-    {resultado && <div className="mt-3 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg bg-canvas p-3 text-sm leading-relaxed text-ink-soft">{resultado}</div>}
+    {resultado && <div className="ts-response-enter mt-3 max-h-56 overflow-y-auto whitespace-pre-wrap rounded-lg bg-canvas p-3 text-sm leading-relaxed text-ink-soft">{resultado}</div>}
     {!resultado && !error && <p className="mt-3 text-xs text-ink-soft">El resumen de hoy se calcula sin IA. Para recomendaciones explicadas por Gemini usa el botón; nunca modifica registros.</p>}
     {error && <p role="alert" className="mt-3 rounded-lg bg-rose/10 p-3 text-xs text-rose">{error}</p>}
     <div className="mt-4 flex flex-wrap items-center gap-3">
       <button type="button" disabled={cargando} onClick={()=>void generar()}
-        className="inline-flex items-center gap-2 rounded-lg bg-brand px-3.5 py-2.5 text-sm font-medium text-white disabled:opacity-50">
+        className="inline-flex items-center gap-2 rounded-lg bg-brand px-3.5 py-2.5 text-sm font-medium text-primary-foreground disabled:opacity-50">
         {cargando ? <LoaderCircle className="size-4 animate-spin"/> : resultado ? <RefreshCw className="size-4"/> : <Sparkles className="size-4"/>}
         {cargando ? "Analizando…" : resultado ? "Actualizar análisis" : "Generar resumen con IA"}
       </button>

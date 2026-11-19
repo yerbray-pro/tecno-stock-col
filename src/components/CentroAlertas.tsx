@@ -26,12 +26,12 @@ export function CentroAlertas() {
         aria-expanded={abierto} title="Ver alertas" onClick={() => setAbierto(v => !v)}
         className="relative flex size-9 items-center justify-center rounded-lg border border-line bg-panel text-ink-soft hover:bg-canvas">
         <Bell className="size-[18px]" />
-        {total > 0 && <span className="absolute -right-2 -top-2 min-w-5 rounded-full bg-rose px-1 py-0.5 text-center text-[10px] font-bold text-white">
+        {total > 0 && <span className="ts-badge-enter absolute -right-2 -top-2 min-w-5 rounded-full bg-rose px-1 py-0.5 text-center text-[10px] font-bold text-primary-foreground">
           {total > 99 ? "99+" : total}
         </span>}
       </button>
       {abierto && <section role="region" aria-label="Alertas actuales de TecnoStock"
-        className="absolute right-0 top-11 z-40 w-[min(21rem,calc(100vw-2rem))] space-y-3 rounded-xl border border-line bg-panel p-4 shadow-xl">
+        className="ts-alerts-enter absolute right-0 top-11 z-40 w-[min(21rem,calc(100vw-2rem))] space-y-3 rounded-xl border border-line bg-panel p-4 shadow-xl">
         <div className="flex items-center justify-between"><h2 className="text-sm font-semibold">Notificaciones</h2>
           <button type="button" onClick={() => setAbierto(false)} className="text-xs text-brand">Cerrar</button>
         </div>

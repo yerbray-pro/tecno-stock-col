@@ -34,7 +34,7 @@ export function AccesoAsistenteIA({ compacto = false }: { compacto?: boolean }) 
           {!compacto && <p className="text-xs text-ink-faint">Pregunta por existencias, pedidos pendientes y reposición. Las respuestas se generan al solicitarlo.</p>}
         </div>
       </div>
-      <Link to="/asistente-ia" className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-white hover:bg-brand/90">
+      <Link to="/asistente-ia" className="inline-flex items-center gap-2 rounded-lg bg-brand px-4 py-2.5 text-sm font-medium text-primary-foreground hover:bg-brand/90">
         <MessageCircleMore className="size-4" />
         {compacto ? "Preguntar a la IA" : "Consultar con Gemini"}
         <ArrowUpRight className="size-3.5" />

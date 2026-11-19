@@ -13,11 +13,14 @@ import { Route as AuthenticatedRouteRouteImport } from './routes/_authenticated/
 import { Route as AuthRouteImport } from './routes/auth'
 import { Route as AuthenticatedIndexRouteImport } from './routes/_authenticated/index'
 import { Route as AuthenticatedAnalisisRouteImport } from './routes/_authenticated/analisis'
+import { Route as AuthenticatedAsistenteIaRouteImport } from './routes/_authenticated/asistente-ia'
 import { Route as AuthenticatedInventarioRouteImport } from './routes/_authenticated/inventario'
 import { Route as AuthenticatedMovimientosRouteImport } from './routes/_authenticated/movimientos'
+import { Route as AuthenticatedPromocionesRouteImport } from './routes/_authenticated/promociones'
 import { Route as AuthenticatedProveedoresRouteImport } from './routes/_authenticated/proveedores'
 import { Route as AuthenticatedRecepcionesRouteImport } from './routes/_authenticated/recepciones'
 import { Route as AuthenticatedUsuariosRouteImport } from './routes/_authenticated/usuarios'
+import { Route as ApiChatIaRouteImport } from './routes/api/chat-ia'
 import { Route as ApiInventarioIaRouteImport } from './routes/api/inventario-ia'
 
 const AuthenticatedRouteRoute = AuthenticatedRouteRouteImport.update({
@@ -39,6 +42,12 @@ const AuthenticatedAnalisisRoute = AuthenticatedAnalisisRouteImport.update({
   path: '/analisis',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const AuthenticatedAsistenteIaRoute =
+  AuthenticatedAsistenteIaRouteImport.update({
+    id: '/asistente-ia',
+    path: '/asistente-ia',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
 const AuthenticatedInventarioRoute = AuthenticatedInventarioRouteImport.update({
   id: '/inventario',
   path: '/inventario',
@@ -48,6 +57,12 @@ const AuthenticatedMovimientosRoute =
   AuthenticatedMovimientosRouteImport.update({
     id: '/movimientos',
     path: '/movimientos',
+    getParentRoute: () => AuthenticatedRouteRoute,
+  } as any)
+const AuthenticatedPromocionesRoute =
+  AuthenticatedPromocionesRouteImport.update({
+    id: '/promociones',
+    path: '/promociones',
     getParentRoute: () => AuthenticatedRouteRoute,
   } as any)
 const AuthenticatedProveedoresRoute =
@@ -67,6 +82,11 @@ const AuthenticatedUsuariosRoute = AuthenticatedUsuariosRouteImport.update({
   path: '/usuarios',
   getParentRoute: () => AuthenticatedRouteRoute,
 } as any)
+const ApiChatIaRoute = ApiChatIaRouteImport.update({
+  id: '/api/chat-ia',
+  path: '/api/chat-ia',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiInventarioIaRoute = ApiInventarioIaRouteImport.update({
   id: '/api/inventario-ia',
   path: '/api/inventario-ia',
@@ -77,21 +97,27 @@ export interface FileRoutesByFullPath {
   '/': typeof AuthenticatedIndexRoute
   '/auth': typeof AuthRoute
   '/analisis': typeof AuthenticatedAnalisisRoute
+  '/asistente-ia': typeof AuthenticatedAsistenteIaRoute
   '/inventario': typeof AuthenticatedInventarioRoute
   '/movimientos': typeof AuthenticatedMovimientosRoute
+  '/promociones': typeof AuthenticatedPromocionesRoute
   '/proveedores': typeof AuthenticatedProveedoresRoute
   '/recepciones': typeof AuthenticatedRecepcionesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/chat-ia': typeof ApiChatIaRoute
   '/api/inventario-ia': typeof ApiInventarioIaRoute
 }
 export interface FileRoutesByTo {
   '/auth': typeof AuthRoute
   '/analisis': typeof AuthenticatedAnalisisRoute
+  '/asistente-ia': typeof AuthenticatedAsistenteIaRoute
   '/inventario': typeof AuthenticatedInventarioRoute
   '/movimientos': typeof AuthenticatedMovimientosRoute
+  '/promociones': typeof AuthenticatedPromocionesRoute
   '/proveedores': typeof AuthenticatedProveedoresRoute
   '/recepciones': typeof AuthenticatedRecepcionesRoute
   '/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/chat-ia': typeof ApiChatIaRoute
   '/api/inventario-ia': typeof ApiInventarioIaRoute
   '/': typeof AuthenticatedIndexRoute
 }
@@ -100,11 +126,14 @@ export interface FileRoutesById {
   '/_authenticated': typeof AuthenticatedRouteRouteWithChildren
   '/auth': typeof AuthRoute
   '/_authenticated/analisis': typeof AuthenticatedAnalisisRoute
+  '/_authenticated/asistente-ia': typeof AuthenticatedAsistenteIaRoute
   '/_authenticated/inventario': typeof AuthenticatedInventarioRoute
   '/_authenticated/movimientos': typeof AuthenticatedMovimientosRoute
+  '/_authenticated/promociones': typeof AuthenticatedPromocionesRoute
   '/_authenticated/proveedores': typeof AuthenticatedProveedoresRoute
   '/_authenticated/recepciones': typeof AuthenticatedRecepcionesRoute
   '/_authenticated/usuarios': typeof AuthenticatedUsuariosRoute
+  '/api/chat-ia': typeof ApiChatIaRoute
   '/api/inventario-ia': typeof ApiInventarioIaRoute
   '/_authenticated/': typeof AuthenticatedIndexRoute
 }
@@ -114,21 +143,27 @@ export interface FileRouteTypes {
     | '/'
     | '/auth'
     | '/analisis'
+    | '/asistente-ia'
     | '/inventario'
     | '/movimientos'
+    | '/promociones'
     | '/proveedores'
     | '/recepciones'
     | '/usuarios'
+    | '/api/chat-ia'
     | '/api/inventario-ia'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/auth'
     | '/analisis'
+    | '/asistente-ia'
     | '/inventario'
     | '/movimientos'
+    | '/promociones'
     | '/proveedores'
     | '/recepciones'
     | '/usuarios'
+    | '/api/chat-ia'
     | '/api/inventario-ia'
     | '/'
   id:
@@ -136,11 +171,14 @@ export interface FileRouteTypes {
     | '/_authenticated'
     | '/auth'
     | '/_authenticated/analisis'
+    | '/_authenticated/asistente-ia'
     | '/_authenticated/inventario'
     | '/_authenticated/movimientos'
+    | '/_authenticated/promociones'
     | '/_authenticated/proveedores'
     | '/_authenticated/recepciones'
     | '/_authenticated/usuarios'
+    | '/api/chat-ia'
     | '/api/inventario-ia'
     | '/_authenticated/'
   fileRoutesById: FileRoutesById
@@ -148,6 +186,7 @@ export interface FileRouteTypes {
 export interface RootRouteChildren {
   AuthenticatedRouteRoute: typeof AuthenticatedRouteRouteWithChildren
   AuthRoute: typeof AuthRoute
+  ApiChatIaRoute: typeof ApiChatIaRoute
   ApiInventarioIaRoute: typeof ApiInventarioIaRoute
 }
 
@@ -181,6 +220,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedAnalisisRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/_authenticated/asistente-ia': {
+      id: '/_authenticated/asistente-ia'
+      path: '/asistente-ia'
+      fullPath: '/asistente-ia'
+      preLoaderRoute: typeof AuthenticatedAsistenteIaRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
     '/_authenticated/inventario': {
       id: '/_authenticated/inventario'
       path: '/inventario'
@@ -193,6 +239,13 @@ declare module '@tanstack/react-router' {
       path: '/movimientos'
       fullPath: '/movimientos'
       preLoaderRoute: typeof AuthenticatedMovimientosRouteImport
+      parentRoute: typeof AuthenticatedRouteRoute
+    }
+    '/_authenticated/promociones': {
+      id: '/_authenticated/promociones'
+      path: '/promociones'
+      fullPath: '/promociones'
+      preLoaderRoute: typeof AuthenticatedPromocionesRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
     '/_authenticated/proveedores': {
@@ -216,6 +269,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AuthenticatedUsuariosRouteImport
       parentRoute: typeof AuthenticatedRouteRoute
     }
+    '/api/chat-ia': {
+      id: '/api/chat-ia'
+      path: '/api/chat-ia'
+      fullPath: '/api/chat-ia'
+      preLoaderRoute: typeof ApiChatIaRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/inventario-ia': {
       id: '/api/inventario-ia'
       path: '/api/inventario-ia'
@@ -228,8 +288,10 @@ declare module '@tanstack/react-router' {
 
 interface AuthenticatedRouteRouteChildren {
   AuthenticatedAnalisisRoute: typeof AuthenticatedAnalisisRoute
+  AuthenticatedAsistenteIaRoute: typeof AuthenticatedAsistenteIaRoute
   AuthenticatedInventarioRoute: typeof AuthenticatedInventarioRoute
   AuthenticatedMovimientosRoute: typeof AuthenticatedMovimientosRoute
+  AuthenticatedPromocionesRoute: typeof AuthenticatedPromocionesRoute
   AuthenticatedProveedoresRoute: typeof AuthenticatedProveedoresRoute
   AuthenticatedRecepcionesRoute: typeof AuthenticatedRecepcionesRoute
   AuthenticatedUsuariosRoute: typeof AuthenticatedUsuariosRoute
@@ -238,8 +300,10 @@ interface AuthenticatedRouteRouteChildren {
 
 const AuthenticatedRouteRouteChildren: AuthenticatedRouteRouteChildren = {
   AuthenticatedAnalisisRoute: AuthenticatedAnalisisRoute,
+  AuthenticatedAsistenteIaRoute: AuthenticatedAsistenteIaRoute,
   AuthenticatedInventarioRoute: AuthenticatedInventarioRoute,
   AuthenticatedMovimientosRoute: AuthenticatedMovimientosRoute,
+  AuthenticatedPromocionesRoute: AuthenticatedPromocionesRoute,
   AuthenticatedProveedoresRoute: AuthenticatedProveedoresRoute,
   AuthenticatedRecepcionesRoute: AuthenticatedRecepcionesRoute,
   AuthenticatedUsuariosRoute: AuthenticatedUsuariosRoute,
@@ -252,6 +316,7 @@ const AuthenticatedRouteRouteWithChildren =
 const rootRouteChildren: RootRouteChildren = {
   AuthenticatedRouteRoute: AuthenticatedRouteRouteWithChildren,
   AuthRoute: AuthRoute,
+  ApiChatIaRoute: ApiChatIaRoute,
   ApiInventarioIaRoute: ApiInventarioIaRoute,
 }
 export const routeTree = rootRouteImport

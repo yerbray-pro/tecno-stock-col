@@ -1,4 +1,5 @@
 import { Link } from "@tanstack/react-router";
+import { BotonTema } from "@/components/BotonTema";
 import { useEffect, useState, type ReactNode } from "react";
 import { Menu, X } from "lucide-react";
 import { useAuth } from "@/lib/auth";
@@ -60,7 +61,7 @@ export function AppShell({
                 {navegacion.map(item => (
                   <Link key={item.to} to={item.to} onClick={() => setMenuMovilAbierto(false)}
                     activeOptions={{ exact: item.to === "/" }}
-                    className="flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-canvas"
+                    className="ts-nav-link flex min-h-11 items-center gap-3 rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-canvas"
                     activeProps={{ className: "bg-brand/8 font-medium text-brand" }}>
                     <span className="grid size-5 place-items-center" aria-hidden="true">{item.icono}</span>
                     {item.texto}
@@ -68,7 +69,7 @@ export function AppShell({
                 ))}
                 {auth.rol === "administrador" && (
                   <Link to="/usuarios" onClick={() => setMenuMovilAbierto(false)}
-                    className="flex min-h-11 items-center rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-canvas"
+                    className="ts-nav-link flex min-h-11 items-center rounded-lg px-3 py-2 text-sm text-ink-soft hover:bg-canvas"
                     activeProps={{ className: "bg-brand/8 font-medium text-brand" }}>Usuarios</Link>
                 )}
               </nav>
@@ -97,7 +98,7 @@ export function AppShell({
                 key={item.to}
                 to={item.to}
                 activeOptions={{ exact: item.to === "/" }}
-                className="flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-sm text-ink-soft hover:bg-canvas"
+                className="ts-nav-link flex items-center gap-2.5 rounded-[10px] px-3 py-2 text-sm text-ink-soft hover:bg-canvas"
                 activeProps={{ className: "bg-brand/8 font-medium text-brand" }}
               >
                 <span className="grid size-4 place-items-center">{item.icono}</span>
@@ -128,6 +129,7 @@ export function AppShell({
               <div className="order-3 flex w-full min-w-0 items-center justify-between gap-2 sm:order-none sm:w-auto sm:justify-end">
                 {acciones && <div className="min-w-0 shrink-0">{acciones}</div>}
                 <div className="ml-auto flex shrink-0 items-center gap-2">
+                  <BotonTema />
                   <CentroAlertas />
                   <span title={auth.nombre} className="hidden max-w-32 truncate text-xs text-ink-soft xl:block">{auth.nombre}</span>
                   <BotonSuave disabled={leaving} onClick={async () => {
@@ -160,7 +162,7 @@ export function Panel({
   className?: string;
 }) {
   return (
-    <div className={`rounded-[14px] bg-panel ring-1 ring-black/5 ${className}`}>{children}</div>
+    <div className={`ts-card rounded-[14px] bg-panel ring-1 ring-black/5 ${className}`}>{children}</div>
   );
 }
 
@@ -171,7 +173,7 @@ export function BotonPrimario({
   return (
     <button
       {...props}
-      className={`inline-flex items-center gap-2 rounded-[10px] bg-brand px-3.5 py-2 text-sm font-medium text-panel ring-1 ring-inset ring-brand/30 transition-colors hover:bg-brand/90 disabled:opacity-50 ${props.className ?? ""}`}
+      className={`inline-flex items-center gap-2 rounded-[10px] bg-brand px-3.5 py-2 text-sm font-medium text-primary-foreground ring-1 ring-inset ring-brand/30 transition-colors hover:bg-brand/90 disabled:opacity-50 ${props.className ?? ""}`}
     >
       {children}
     </button>
