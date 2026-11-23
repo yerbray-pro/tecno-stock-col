@@ -17,6 +17,11 @@ El sistema original tiene `productos`, `movimientos`, `profiles`, `user_roles`, 
 6. Revisar políticas RLS y permisos en todas las tablas, ejecutar Security Advisors y comprobar en red que no hay datos de otras empresas en respuestas de API. Probar con JWTs reales, no únicamente desde el editor SQL (que suele usar un rol privilegiado y puede eludir RLS).
 7. Recién después enlazar una app **de pruebas** a ese Supabase y habilitar pantallas multiempresa. No apuntar esa app al proyecto de producción.
 
+## Pantalla de laboratorio implementada
+Se añadió la ruta pública de interfaz `/demo-multiempresa` que **exige una sesión real de Supabase para consultar información**. Lista exclusivamente las empresas donde el usuario tiene membresía activa, permite seleccionar una de ellas, muestra sus productos e historial, registra entrada/salida por RPC y permite crear productos solo si el rol de esa empresa es administrador. Los datos no son ficticios ni se muestran sin backend: la interfaz necesita las tablas de laboratorio.
+
+⚠️ **No abrir esa ruta con las credenciales/variables del Supabase de producción**: las tablas demo deben existir únicamente en un proyecto o rama aislada. La compilación correcta no constituye prueba de RLS.
+
 ## Cobertura del laboratorio
 - `ts_demo_empresas`: nombre y estado.
 - `ts_demo_miembros`: usuario, empresa, rol y estado.
