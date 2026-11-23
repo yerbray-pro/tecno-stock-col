@@ -1,5 +1,5 @@
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, type FormEvent } from "react";
 import { BotonTema } from "@/components/BotonTema";
 import { supabase } from "@/lib/supabase";
 
@@ -55,8 +55,7 @@ function LaboratorioMultiempresa() {
     ]);
     if (p.error) throw p.error;
     if (m.error) throw m.error;
-    setProductos((p.data ?? []) as Producto[]);
-    setMovimientos((m.data ?? []) as Movimiento[]);
+    return { productos: (p.data ?? []) as Producto[], movimientos: (m.data ?? []) as Movimiento[] };
   }, []);
 
   useEffect(() => {
@@ -109,13 +108,15 @@ function LaboratorioMultiempresa() {
     setProductoId("");
     setAviso("");
     setError("");
-    void cargarProductos(empresaId).catch(e => {
+    void cargarProductos(empresaId).then(resultado => {
+      if (vigente) { setProductos(resultado.productos); setMovimientos(resultado.movimientos); }
+    }).catch(e => {
       if (vigente) setError("No se pudo leer inventario: " + mensajeError(e));
     });
     return () => { vigente = false; };
   }, [empresaId, cargarProductos]);
 
-  async function registrar(e: React.FormEvent) {
+  async function registrar(e: FormEvent) {
     e.preventDefault();
     if (!supabase || !seleccionada || ocupado) return;
     if (!Number.isSafeInteger(Number(cantidad)) || Number(cantidad) < 1) {
@@ -135,13 +136,14 @@ function LaboratorioMultiempresa() {
         throw new Error("No se pudo confirmar el registro; revisa el historial antes de intentar otra vez.");
       }
       setAviso("Movimiento confirmado en la empresa seleccionada.");
-      await cargarProductos(seleccionada.id);
+      const actualizado = await cargarProductos(seleccionada.id);
+      if (empresaId === seleccionada.id) { setProductos(actualizado.productos); setMovimientos(actualizado.movimientos); }
     } catch (e) {
       setError("No se pudo confirmar el movimiento. Revisa el historial antes de repetirlo. " + mensajeError(e));
     } finally { setOcupado(false); }
   }
 
-  async function crearProducto(e: React.FormEvent) {
+  async function crearProducto(e: FormEvent) {
     e.preventDefault();
     if (!supabase || !seleccionada || seleccionada.rol !== "admin" || ocupado) return;
     setOcupado(true); setError(""); setAviso("");
@@ -187,7 +189,7 @@ function LaboratorioMultiempresa() {
           <section className="rounded-xl border border-line bg-panel p-5">
             <label className="block text-sm font-medium">
               Empresa autorizada
-              <select className="campo mt-2" value={empresaId} onChange={e => setEmpresaId(e.target.value)}>
+              <select className="campo mt-2" value={empresaId} disabled={ocupado} onChange={e => setEmpresaId(e.target.value)}>
                 {empresas.map(empresa => <option key={empresa.id} value={empresa.id}>{empresa.nombre}</option>)}
               </select>
             </label>
